@@ -1,0 +1,7 @@
+bin
+classes
+dist
+vsphere-client
+vsphere-client-debug
+doc/*.1
+*.tar.bz2

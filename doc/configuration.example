@@ -1,0 +1,29 @@
+## vSphere user credentials
+# vSphere Username
+#username=
+# vSphere Password
+#password=
+# vSphere Server URI
+#server=
+
+## Mode selectors, use only one at a time
+# Always show help
+#help=
+# List mode (use: org,vdc,vapp,vm,catalog)
+#list=
+# Add VM mode
+#addvm=
+# Remove VM mode
+#removevm=
+
+## Selectors
+# Select this data center
+#dc=
+# Select this folder
+#folder=
+# Select this cluster
+#cluster=
+# Select this storage pool
+#storage=
+# Select this template
+#template=
