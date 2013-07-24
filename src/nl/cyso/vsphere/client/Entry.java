@@ -24,7 +24,6 @@ import nl.cyso.vsphere.client.config.Version;
 import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.ConfigurationException;
 
 public class Entry {
@@ -41,12 +40,7 @@ public class Entry {
 		ConfigModes.init();
 
 		// Try to parse all ROOT cli options
-		try {
-			cli = Configuration.parseCli("root", args);
-		} catch (ParseException e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
+		cli = Configuration.parseCli("ROOT", args);
 
 		// Load the config if it was specified
 		if (cli.hasOption("config")) {
