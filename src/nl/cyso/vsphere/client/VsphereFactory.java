@@ -23,8 +23,6 @@ import java.util.Random;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ParaVirtualSCSIController;
-import com.vmware.vim25.VirtualCdrom;
-import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
@@ -41,7 +39,7 @@ import com.vmware.vim25.VirtualSCSISharing;
 import com.vmware.vim25.VirtualVmxnet3;
 
 public class VsphereFactory {
-	private static int key = new Random().nextInt(100);
+	private static int key = new Random().nextInt(10) + 10;
 
 	private static int getKey() {
 		return key++;
@@ -70,10 +68,10 @@ public class VsphereFactory {
 		VirtualDisk disk = new VirtualDisk();
 		disk.setKey(new Integer(0));
 		disk.setControllerKey(controllerKey);
-		disk.setUnitNumber(unit);
 		disk.setCapacityInKB(1024 * diskSizeMB);
 		disk.setBacking(diskfileBacking);
 		disk.setKey(VsphereFactory.getKey());
+		disk.setUnitNumber(unit);
 
 		diskSpec.setFileOperation(VirtualDeviceConfigSpecFileOperation.CREATE);
 		diskSpec.setOperation(VirtualDeviceConfigSpecOperation.ADD);
@@ -82,10 +80,9 @@ public class VsphereFactory {
 		return diskSpec;
 	}
 
-	protected static VirtualDeviceConfigSpec getScsiController(int bus, int unit, VirtualSCSISharing sharing, VirtualDeviceConfigSpecOperation action) {
+	protected static VirtualDeviceConfigSpec getScsiController(int bus, VirtualSCSISharing sharing, VirtualDeviceConfigSpecOperation action) {
 		VirtualSCSIController scsiCtrl = new ParaVirtualSCSIController();
 		scsiCtrl.setBusNumber(bus);
-		scsiCtrl.setUnitNumber(unit);
 		scsiCtrl.setSharedBus(sharing);
 		scsiCtrl.setKey(VsphereFactory.getKey());
 
@@ -109,24 +106,6 @@ public class VsphereFactory {
 		floppySpec.setDevice(floppy);
 
 		return floppySpec;
-	}
-
-	protected static VirtualDeviceConfigSpec getVirtualCdDrive(int controllerKey, int unit, ManagedObjectReference datastore, String filename, VirtualDeviceConfigSpecOperation action) {
-		VirtualCdromIsoBackingInfo cdDeviceBacking = new VirtualCdromIsoBackingInfo();
-		cdDeviceBacking.setDatastore(datastore);
-		cdDeviceBacking.setFileName(filename);
-
-		VirtualCdrom cdrom = new VirtualCdrom();
-		cdrom.setBacking(cdDeviceBacking);
-		cdrom.setControllerKey(controllerKey);
-		cdrom.setUnitNumber(unit);
-		cdrom.setKey(VsphereFactory.getKey());
-
-		VirtualDeviceConfigSpec cdSpec = new VirtualDeviceConfigSpec();
-		cdSpec.setOperation(action);
-		cdSpec.setDevice(cdrom);
-
-		return cdSpec;
 	}
 
 	protected static VirtualDeviceConfigSpec getVirtualNicForPortGroup(DistributedVirtualSwitchPortConnection port, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {
