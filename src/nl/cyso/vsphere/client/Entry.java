@@ -18,6 +18,8 @@
  */
 package nl.cyso.vsphere.client;
 
+import java.rmi.RemoteException;
+
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.cyso.vsphere.client.config.Version;
@@ -77,6 +79,21 @@ public class Entry {
 
 		if (!Configuration.has("username") || !Configuration.has("password") || !Configuration.has("server")) {
 			Formatter.usageError("No credentials were set, or server uri was missing", "root");
+		}
+
+		VsphereClient client = new VsphereClient();
+		String mode = Configuration.getString("mode");
+		if (mode.equals("ADDVM")) {
+			Configuration.load("ADDVM", args);
+			try {
+				client.createVirtualMachine();
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 }

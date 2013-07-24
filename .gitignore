@@ -5,3 +5,4 @@ vsphere-client
 vsphere-client-debug
 doc/*.1
 *.tar.bz2
+*.config
