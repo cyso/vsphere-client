@@ -58,8 +58,10 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder");
 		ConfigParameter cluster = new ConfigParameter("cluster", true, "C", "Select this Cluster");
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
+		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
 
-		List<ConfigParameter> selectionopts = Arrays.asList(dc, folder, cluster, storage);
+		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode);
+		List<ConfigParameter> selectionopts2 = Arrays.asList(folder, cluster, storage);
 
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
@@ -72,8 +74,10 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter mac = new ConfigParameter("mac", true, "MAC", "MAC address of the object to create");
 		ConfigParameter cpu = new ConfigParameter("cpu", true, "CPU", "Amount of CPUs (cores) of the object to create");
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
+		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
+		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
 
-		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, ip, network, mac, cpu, memory);
+		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, ip, network, mac, cpu, memory, os, disk);
 
 		OptionGroup modes = new OptionGroup();
 		modes.addOption(helpmode);
@@ -107,7 +111,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigMode addvm = new ConfigMode();
 		addvm.addRequiredOption(addmode);
 		addvm.addOptions(configopts);
-		addvm.addOptions(selectionopts);
+		addvm.addRequiredOptions(selectionopts1);
+		addvm.addOptions(selectionopts2);
 		addvm.addRequiredOptions(creationopts);
 
 		ConfigMode removevm = new ConfigMode();
