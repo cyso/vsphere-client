@@ -23,12 +23,17 @@ import java.net.UnknownHostException;
 import java.util.Iterator;
 
 import nl.nekoconeko.configmode.ConfigMode;
+import nl.nekoconeko.configmode.Formatter;
 import nl.nekoconeko.configmode.IgnorePosixParser;
 
+import org.apache.commons.cli.AlreadySelectedException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
@@ -42,7 +47,11 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 		return Configuration.valueOrNull(key);
 	}
 
-	public static void load(String mode, String[] args) throws ParseException {
+	public static String getString(String key) {
+		return (String) Configuration.valueOrNull(key);
+	}
+
+	public static void load(String mode, String[] args) {
 		CommandLine cli = Configuration.parseCli(mode, args);
 		Configuration.load(cli);
 	}
@@ -110,9 +119,27 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 		}
 	}
 
-	public static CommandLine parseCli(String mode, String[] args) throws ParseException {
+	public static CommandLine parseCli(String mode, String[] args) {
+		CommandLine cli = null;
 		Options opt = ConfigModes.getMode(mode);
-		return new IgnorePosixParser(true).parse(opt, args);
+		try {
+			cli = new IgnorePosixParser(true).parse(opt, args);
+		} catch (MissingArgumentException me) {
+			Formatter.usageError(me.getLocalizedMessage(), mode);
+			System.exit(-1);
+		} catch (MissingOptionException mo) {
+			Formatter.usageError(mo.getLocalizedMessage(), mode);
+			System.exit(-1);
+		} catch (AlreadySelectedException ase) {
+			Formatter.usageError(ase.getLocalizedMessage(), mode);
+		} catch (UnrecognizedOptionException uoe) {
+			Formatter.usageError(uoe.getLocalizedMessage(), mode);
+		} catch (ParseException e) {
+			Formatter.printStackTrace(e);
+			System.exit(-1);
+		}
+
+		return cli;
 	}
 
 	@Override
