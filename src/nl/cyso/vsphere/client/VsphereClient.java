@@ -19,6 +19,7 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -93,12 +94,27 @@ public class VsphereClient {
 		vmfi.setVmPathName(String.format("%s", datastoreVolume));
 
 		VirtualDeviceConfigSpec scsiCtrlSpec = VsphereFactory.getScsiController(0, VirtualSCSISharing.NO_SHARING, VirtualDeviceConfigSpecOperation.ADD);
-		VirtualDeviceConfigSpec diskSpec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, diskSizeMB);
+
+		if (diskSizeMB < 10 * 1024) {
+			diskSizeMB = 10 * 1024;
+		}
+
+		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, 10 * 1024);
+		VirtualDeviceConfigSpec disk2Spec = null;
+
+		if (diskSizeMB > 10 * 1024) {
+			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, datastoreName, diskSizeMB - 10 * 1024);
+		}
 
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
 		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.MANUAL, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.ADD);
 
-		List<VirtualDeviceConfigSpec> deviceConfigSpec = Arrays.asList(scsiCtrlSpec, diskSpec, nicSpec);
+		List<VirtualDeviceConfigSpec> deviceConfigSpec = new ArrayList<VirtualDeviceConfigSpec>();
+		deviceConfigSpec.addAll(Arrays.asList(scsiCtrlSpec, disk1Spec, nicSpec));
+
+		if (disk2Spec != null) {
+			deviceConfigSpec.add(disk2Spec);
+		}
 
 		VirtualMachineConfigSpec configSpec = new VirtualMachineConfigSpec();
 		configSpec.setFiles(vmfi);
