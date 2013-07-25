@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
+import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ConfigTarget;
 import com.vmware.vim25.DatastoreSummary;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
@@ -460,5 +463,41 @@ public class VsphereQuery {
 
 	protected static ManagedObjectReference getVMRootFolder(ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(dc, new String[] { "vmFolder" }).get("vmFolder");
+	}
+
+	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return VsphereQuery.findVirtualMachines(machines, rootFolder, 0);
+	}
+
+	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int depth) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		Map<String, Object> objects = VsphereQuery.getEntityProps(rootFolder, new String[] { "name", "childEntity" });
+		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
+
+		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
+			for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
+				String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
+				if (ref.getType().equals("Folder")) {
+					System.out.println(StringUtils.repeat("\t", depth) + name);
+					out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
+				} else if (ref.getType().equals("VirtualMachine")) {
+					if (machines != null) {
+						boolean flag = false;
+						for (String machine : machines) {
+							if (name.contains(machine)) {
+								flag = true;
+								break;
+							}
+						}
+						if (!flag) {
+							continue;
+						}
+					}
+					System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
+					out.put(name, ref);
+				}
+			}
+		}
+
+		return out;
 	}
 }
