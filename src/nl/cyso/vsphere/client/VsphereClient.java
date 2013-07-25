@@ -144,10 +144,10 @@ public class VsphereClient {
 			throw new RuntimeException(msg);
 		}
 		ManagedObjectReference vmMor = (ManagedObjectReference) VsphereQuery.getEntityProps(taskmor, new String[] { "info.result" }).get("info.result");
-		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
 
 		// Start the Newly Created VM.
-		// this.powerOnVM(vmMor);
+		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
+		this.powerOnVM(vmMor);
 
 		VsphereManager.disconnect();
 	}
