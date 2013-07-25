@@ -111,27 +111,26 @@ public class VsphereClient {
 	}
 
 	public static void createVirtualMachine() throws RemoteException, Exception {
-		ManagedObjectReference dcmor = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "Datacenter").get(Configuration.get("dc"));
-
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(Configuration.getString("dc"));
 		if (dcmor == null) {
 			Formatter.printErrorLine("Datacenter " + Configuration.get("dc") + " not found.");
 			return;
 		}
 
-		ManagedObjectReference hostmor = VsphereQuery.getMOREFsInContainerByType(dcmor, "HostSystem").get(Configuration.get("esxnode"));
+		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
 		if (hostmor == null) {
 			Formatter.printErrorLine("Host " + Configuration.get("esxnode") + " not found");
 			return;
 		}
 
-		ManagedObjectReference crmor = (ManagedObjectReference) VsphereQuery.getEntityProps(hostmor, new String[] { "parent" }).get("parent");
+		ManagedObjectReference crmor = VsphereQuery.getReferenceParent(hostmor);
 		if (crmor == null) {
 			Formatter.printErrorLine("No Compute Resource Found On Specified Host");
 			return;
 		}
 
-		ManagedObjectReference resourcepoolmor = (ManagedObjectReference) VsphereQuery.getEntityProps(crmor, new String[] { "resourcePool" }).get("resourcePool");
-		ManagedObjectReference vmFolderMor = (ManagedObjectReference) VsphereQuery.getEntityProps(dcmor, new String[] { "vmFolder" }).get("vmFolder");
+		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
+		ManagedObjectReference vmFolderMor = VsphereQuery.getVMRootFolder(dcmor);
 
 		VirtualMachineConfigSpec vmConfigSpec = VsphereClient.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));

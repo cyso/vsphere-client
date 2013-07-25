@@ -420,4 +420,45 @@ public class VsphereQuery {
 
 		return output;
 	}
+
+	protected static ManagedObjectReference getDatacenterReference(String name) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "Datacenter").get(name);
+	}
+
+	protected static ManagedObjectReference getHostNodeReference(String name, String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
+		return VsphereQuery.getHostNodeReference(name, dcmor);
+	}
+
+	protected static ManagedObjectReference getHostNodeReference(String name, ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return VsphereQuery.getMOREFsInContainerByType(dc, "HostSystem").get(name);
+	}
+
+	protected static ManagedObjectReference getReferenceParent(ManagedObjectReference object) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return (ManagedObjectReference) VsphereQuery.getEntityProps(object, new String[] { "parent" }).get("parent");
+	}
+
+	protected static ManagedObjectReference getResourcePoolReference(String esxnode, String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
+		return VsphereQuery.getResourcePoolReference(esxnode, dcmor);
+	}
+
+	protected static ManagedObjectReference getResourcePoolReference(String esxnode, ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(esxnode, dc);
+		return VsphereQuery.getResourcePoolReference(hostmor);
+	}
+
+	protected static ManagedObjectReference getResourcePoolReference(ManagedObjectReference esxnode) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference crmor = VsphereQuery.getReferenceParent(esxnode);
+		return (ManagedObjectReference) VsphereQuery.getEntityProps(crmor, new String[] { "resourcePool" }).get("resourcePool");
+	}
+
+	protected static ManagedObjectReference getVMRootFolder(String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
+		return VsphereQuery.getVMRootFolder(dcmor);
+	}
+
+	protected static ManagedObjectReference getVMRootFolder(ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return (ManagedObjectReference) VsphereQuery.getEntityProps(dc, new String[] { "vmFolder" }).get("vmFolder");
+	}
 }
