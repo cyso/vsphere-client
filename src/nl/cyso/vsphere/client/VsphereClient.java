@@ -60,7 +60,7 @@ public class VsphereClient {
 
 		ManagedObjectReference taskmor = VsphereManager.getVimPort().createVMTask(vmFolderMor, vmConfigSpec, resourcepoolmor, hostmor);
 		if (VsphereQuery.getTaskResultAfterDone(taskmor)) {
-			System.out.printf("Success: Creating VM  - [ %s ] %n", Configuration.get("fqdn"));
+			Formatter.printInfoLine(String.format("Success: Creating VM  - [ %s ] %n", Configuration.get("fqdn")));
 		} else {
 			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
 			throw new RuntimeException(msg);
@@ -77,7 +77,7 @@ public class VsphereClient {
 	public static void powerOnVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
 		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOnVMTask(vmMor, null);
 		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
-			System.out.println("Success: VM powered on successfully");
+			Formatter.printInfoLine("Success: VM powered on successfully");
 		} else {
 			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
 			throw new RuntimeException(msg);
@@ -87,7 +87,7 @@ public class VsphereClient {
 	public static void powerOffVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
 		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOffVMTask(vmMor);
 		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
-			System.out.println("Success: VM powered off successfully");
+			Formatter.printInfoLine("Success: VM powered off successfully");
 		} else {
 			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
 			throw new RuntimeException(msg);
@@ -96,6 +96,6 @@ public class VsphereClient {
 
 	public static void shutdownVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
 		VsphereManager.getVimPort().shutdownGuest(vmMor);
-		System.out.println("Success: VM shutdown requested");
+		Formatter.printInfoLine("Success: VM shutdown requested");
 	}
 }
