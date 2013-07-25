@@ -19,97 +19,15 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.nekoconeko.configmode.Formatter;
 
-import com.vmware.vim25.ConfigTarget;
-import com.vmware.vim25.DatastoreSummary;
-import com.vmware.vim25.DistributedVirtualPortgroupInfo;
-import com.vmware.vim25.DistributedVirtualSwitchInfo;
-import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
-import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.VirtualDeviceConfigSpec;
-import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
-import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualMachineConfigSpec;
-import com.vmware.vim25.VirtualMachineFileInfo;
 import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
-import com.vmware.vim25.VirtualSCSISharing;
 
 public class VsphereClient {
-	private static VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		ConfigTarget configTarget = null;
-		try {
-			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
-		} catch (Exception e) {
-			Formatter.printErrorLine("Failed to retrieve Config Target");
-			Formatter.printError(e);
-			System.exit(-1);
-		}
-
-		List<DistributedVirtualPortgroupInfo> portGroups = VsphereQuery.getVirtualPortgroupsForConfigTarget(configTarget, network);
-		List<DistributedVirtualSwitchInfo> switches = VsphereQuery.getVirtualSwitchesForConfigTarget(configTarget, "dvSwitch");
-		List<DatastoreSummary> datastores = VsphereQuery.getDatastoresForConfigTarget(configTarget, datastoreName);
-
-		if (portGroups.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve requested PortGroup");
-			System.exit(-1);
-		}
-
-		if (switches.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve Switches");
-			System.exit(-1);
-		}
-
-		if (datastores.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve DataStores");
-			System.exit(-1);
-		}
-
-		String networkName = portGroups.get(0).getPortgroupName();
-		String switchUuid = switches.get(0).getSwitchUuid();
-		ManagedObjectReference datastoreRef = datastores.get(0).getDatastore();
-		String datastoreVolume = VsphereQuery.getVolumeName(datastoreName);
-
-		VirtualMachineFileInfo vmfi = new VirtualMachineFileInfo();
-		vmfi.setVmPathName(String.format("%s", datastoreVolume));
-
-		VirtualDeviceConfigSpec scsiCtrlSpec = VsphereFactory.getScsiController(0, VirtualSCSISharing.NO_SHARING, VirtualDeviceConfigSpecOperation.ADD);
-
-		if (diskSizeMB < 10 * 1024) {
-			diskSizeMB = 10 * 1024;
-		}
-
-		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, 10 * 1024);
-		VirtualDeviceConfigSpec disk2Spec = null;
-
-		if (diskSizeMB > 10 * 1024) {
-			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, datastoreName, diskSizeMB - 10 * 1024);
-		}
-
-		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
-		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.MANUAL, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.ADD);
-
-		List<VirtualDeviceConfigSpec> deviceConfigSpec = new ArrayList<VirtualDeviceConfigSpec>();
-		deviceConfigSpec.addAll(Arrays.asList(scsiCtrlSpec, disk1Spec, nicSpec));
-
-		if (disk2Spec != null) {
-			deviceConfigSpec.add(disk2Spec);
-		}
-
-		VirtualMachineConfigSpec configSpec = new VirtualMachineConfigSpec();
-		configSpec.setFiles(vmfi);
-		configSpec.getDeviceChange().addAll(deviceConfigSpec);
-
-		return configSpec;
-	}
-
 	public static void createVirtualMachine() throws RemoteException, Exception {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(Configuration.getString("dc"));
 		if (dcmor == null) {
@@ -132,7 +50,7 @@ public class VsphereClient {
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
 		ManagedObjectReference vmFolderMor = VsphereQuery.getVMRootFolder(dcmor);
 
-		VirtualMachineConfigSpec vmConfigSpec = VsphereClient.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.valueOf(Configuration.getString("memory")));
