@@ -114,6 +114,7 @@ public class VsphereClient {
 			Formatter.printErrorLine("Datacenter " + Configuration.get("dc") + " not found.");
 			return;
 		}
+
 		ManagedObjectReference hostmor = VsphereQuery.getMOREFsInContainerByType(dcmor, "HostSystem").get(Configuration.get("esxnode"));
 		if (hostmor == null) {
 			Formatter.printErrorLine("Host " + Configuration.get("esxnode") + " not found");
@@ -130,9 +131,10 @@ public class VsphereClient {
 		ManagedObjectReference vmFolderMor = (ManagedObjectReference) VsphereQuery.getEntityProps(dcmor, new String[] { "vmFolder" }).get("vmFolder");
 		VirtualMachineConfigSpec vmConfigSpec = this.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
-		vmConfigSpec.setAnnotation("VirtualMachine Annotation");
+		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.valueOf(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.valueOf(Configuration.getString("cpu")));
+		vmConfigSpec.setNumCoresPerSocket(1);
 		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.UBUNTU_64_GUEST.value());
 		ManagedObjectReference taskmor = VsphereManager.getVimPort().createVMTask(vmFolderMor, vmConfigSpec, resourcepoolmor, hostmor);
 		if (VsphereQuery.getTaskResultAfterDone(taskmor)) {
