@@ -21,8 +21,10 @@ package nl.cyso.vsphere.client;
 import java.util.Random;
 
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
+import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ParaVirtualSCSIController;
+import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
@@ -106,6 +108,15 @@ public class VsphereFactory {
 		floppySpec.setDevice(floppy);
 
 		return floppySpec;
+	}
+
+	protected static DistributedVirtualSwitchPortConnection getPortForNetworkAndSwitch(String networkName, String switchUuid) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ManagedObjectReference netw = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "DistributedVirtualPortgroup").get(networkName);
+		DistributedVirtualSwitchPortConnection port = new DistributedVirtualSwitchPortConnection();
+		port.setPortgroupKey(netw.getValue());
+		port.setSwitchUuid(switchUuid);
+
+		return port;
 	}
 
 	protected static VirtualDeviceConfigSpec getVirtualNicForPortGroup(DistributedVirtualSwitchPortConnection port, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {

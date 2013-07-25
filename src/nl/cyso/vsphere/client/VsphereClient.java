@@ -95,11 +95,7 @@ public class VsphereClient {
 		VirtualDeviceConfigSpec scsiCtrlSpec = VsphereFactory.getScsiController(0, VirtualSCSISharing.NO_SHARING, VirtualDeviceConfigSpecOperation.ADD);
 		VirtualDeviceConfigSpec diskSpec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, diskSizeMB);
 
-		ManagedObjectReference netw = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "DistributedVirtualPortgroup").get(networkName);
-		DistributedVirtualSwitchPortConnection port = new DistributedVirtualSwitchPortConnection();
-		port.setPortgroupKey(netw.getValue());
-		port.setSwitchUuid(switchUuid);
-
+		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
 		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.MANUAL, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.ADD);
 
 		List<VirtualDeviceConfigSpec> deviceConfigSpec = Arrays.asList(scsiCtrlSpec, diskSpec, nicSpec);
