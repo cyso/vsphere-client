@@ -160,11 +160,25 @@ public class VsphereClient {
 	public static void powerOnVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
 		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOnVMTask(vmMor, null);
 		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
-			System.out.println("Success: VM started Successfully");
+			System.out.println("Success: VM powered on successfully");
 		} else {
 			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
 			throw new RuntimeException(msg);
 		}
 	}
 
+	public static void powerOffVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
+		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOffVMTask(vmMor);
+		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
+			System.out.println("Success: VM powered off successfully");
+		} else {
+			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
+			throw new RuntimeException(msg);
+		}
+	}
+
+	public static void shutdownVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
+		VsphereManager.getVimPort().shutdownGuest(vmMor);
+		System.out.println("Success: VM shutdown requested");
+	}
 }
