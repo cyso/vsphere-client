@@ -81,12 +81,11 @@ public class Entry {
 			Formatter.usageError("No credentials were set, or server uri was missing", "root");
 		}
 
-		VsphereClient client = new VsphereClient();
 		String mode = Configuration.getString("mode");
 		if (mode.equals("ADDVM")) {
 			Configuration.load("ADDVM", args);
 			try {
-				client.createVirtualMachine();
+				VsphereClient.createVirtualMachine();
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

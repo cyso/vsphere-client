@@ -43,20 +43,7 @@ import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
 import com.vmware.vim25.VirtualSCSISharing;
 
 public class VsphereClient {
-	/**
-	 * Creates the vm config spec object.
-	 * 
-	 * @param vmName the vm name
-	 * @param datastoreName the datastore name
-	 * @param diskSizeMB the disk size in mb
-	 * @param computeResMor the compute res moref
-	 * @param hostMor the host mor
-	 * @return the virtual machine config spec object
-	 * @throws RuntimeFaultFaultMsg
-	 * @throws InvalidPropertyFaultMsg
-	 * @throws Exception the exception
-	 */
-	private VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	private static VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
@@ -123,7 +110,7 @@ public class VsphereClient {
 		return configSpec;
 	}
 
-	public void createVirtualMachine() throws RemoteException, Exception {
+	public static void createVirtualMachine() throws RemoteException, Exception {
 		ManagedObjectReference dcmor = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "Datacenter").get(Configuration.get("dc"));
 
 		if (dcmor == null) {
@@ -145,13 +132,15 @@ public class VsphereClient {
 
 		ManagedObjectReference resourcepoolmor = (ManagedObjectReference) VsphereQuery.getEntityProps(crmor, new String[] { "resourcePool" }).get("resourcePool");
 		ManagedObjectReference vmFolderMor = (ManagedObjectReference) VsphereQuery.getEntityProps(dcmor, new String[] { "vmFolder" }).get("vmFolder");
-		VirtualMachineConfigSpec vmConfigSpec = this.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+
+		VirtualMachineConfigSpec vmConfigSpec = VsphereClient.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.valueOf(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.valueOf(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
 		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.UBUNTU_64_GUEST.value());
+
 		ManagedObjectReference taskmor = VsphereManager.getVimPort().createVMTask(vmFolderMor, vmConfigSpec, resourcepoolmor, hostmor);
 		if (VsphereQuery.getTaskResultAfterDone(taskmor)) {
 			System.out.printf("Success: Creating VM  - [ %s ] %n", Configuration.get("fqdn"));
@@ -163,19 +152,12 @@ public class VsphereClient {
 
 		// Start the Newly Created VM.
 		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
-		this.powerOnVM(vmMor);
+		VsphereClient.powerOnVM(vmMor);
 
 		VsphereManager.disconnect();
 	}
 
-	/**
-	 * Power on vm.
-	 * 
-	 * @param vmMor the vm moref
-	 * @throws RemoteException the remote exception
-	 * @throws Exception the exception
-	 */
-	public void powerOnVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
+	public static void powerOnVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
 		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOnVMTask(vmMor, null);
 		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
 			System.out.println("Success: VM started Successfully");
