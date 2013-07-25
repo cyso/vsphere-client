@@ -69,7 +69,6 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		// User input
 		ConfigParameter fqdn = new ConfigParameter("fqdn", true, "FQDN", "Name of object to create");
 		ConfigParameter description = new ConfigParameter("description", true, "DESC", "Description of object to create");
-		ConfigParameter ip = new ConfigParameter("ip", true, "IP", "IP of the object to create");
 		ConfigParameter network = new ConfigParameter("network", true, "NETWORK", "Network of the object to create");
 		ConfigParameter mac = new ConfigParameter("mac", true, "MAC", "MAC address of the object to create");
 		ConfigParameter cpu = new ConfigParameter("cpu", true, "CPU", "Amount of CPUs (cores) of the object to create");
@@ -77,7 +76,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
 
-		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, ip, network, mac, cpu, memory, os, disk);
+		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, mac, cpu, memory, os, disk);
 
 		OptionGroup modes = new OptionGroup();
 		modes.addOption(helpmode);
