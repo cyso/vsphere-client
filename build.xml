@@ -134,11 +134,11 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 
 		<copy file="README.md" tofile="${dist.dir}/README.md" />
 
-		<jar destfile="${dist.dir}/${executable}.jar" basedir="${class.root}">
+		<jar destfile="${dist.dir}/${executable}-${version}.jar" basedir="${class.root}">
 			<manifest>
 				<attribute name="Implementation-Vendor" value="Cyso BV."/>
 				<attribute name="Implementation-Title" value="${executable}"/>
-				<attribute name="Implementation-Version" value="0.1"/>
+				<attribute name="Implementation-Version" value="${version}"/>
 				<attribute name="Built-By" value="${user.name}"/>
 				<attribute name="Sealed" value="false"/>
 				<attribute name="Class-Path" value="${jar.class.path}"/>
