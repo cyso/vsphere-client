@@ -52,7 +52,17 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 	}
 
 	public static void load(String mode, String[] args) {
-		CommandLine cli = Configuration.parseCli(mode, args);
+		try {
+			Configuration.load(mode, args, true);
+		} catch (Exception e) {
+			Formatter.printErrorLine("This error should never happend");
+			Formatter.printStackTrace(e);
+			System.exit(-1);
+		}
+	}
+
+	public static void load(String mode, String[] args, boolean dieOnFailure) throws Exception {
+		CommandLine cli = Configuration.parseCli(mode, args, dieOnFailure);
 		Configuration.load(cli);
 	}
 
@@ -120,23 +130,43 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 	}
 
 	public static CommandLine parseCli(String mode, String[] args) {
+		try {
+			return parseCli(mode, args, true);
+		} catch (Exception e) {
+			Formatter.printErrorLine("This error should never happend");
+			Formatter.printStackTrace(e);
+			System.exit(-1);
+			return null;
+		}
+	}
+
+	public static CommandLine parseCli(String mode, String[] args, boolean dieOnFailure) throws Exception {
 		CommandLine cli = null;
 		Options opt = ConfigModes.getMode(mode);
+		Throwable die = null;
 		try {
 			cli = new IgnorePosixParser(true).parse(opt, args);
 		} catch (MissingArgumentException me) {
-			Formatter.usageError(me.getLocalizedMessage(), mode);
-			System.exit(-1);
+			Formatter.usageError(me.getLocalizedMessage(), mode, false);
+			die = me;
 		} catch (MissingOptionException mo) {
-			Formatter.usageError(mo.getLocalizedMessage(), mode);
-			System.exit(-1);
+			Formatter.usageError(mo.getLocalizedMessage(), mode, false);
+			die = mo;
 		} catch (AlreadySelectedException ase) {
-			Formatter.usageError(ase.getLocalizedMessage(), mode);
+			Formatter.usageError(ase.getLocalizedMessage(), mode, false);
+			die = ase;
 		} catch (UnrecognizedOptionException uoe) {
-			Formatter.usageError(uoe.getLocalizedMessage(), mode);
+			Formatter.usageError(uoe.getLocalizedMessage(), mode, false);
+			die = uoe;
 		} catch (ParseException e) {
 			Formatter.printStackTrace(e);
+			die = e;
+		}
+
+		if (dieOnFailure && die != null) {
 			System.exit(-1);
+		} else if (!dieOnFailure && die != null) {
+			throw new Exception("Failed to initialize Configuration", die);
 		}
 
 		return cli;
