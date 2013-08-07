@@ -356,12 +356,20 @@ public class VsphereQuery {
 	}
 
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
-		return VsphereQuery.findVirtualMachines(machines, rootFolder, 0);
+		return VsphereQuery.findVirtualMachines(machines, rootFolder, -1, 0);
 	}
 
-	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int depth) throws InvalidProperty, RuntimeFault, RemoteException {
-		Map<String, Object> objects = VsphereQuery.getEntityProps(rootFolder, new String[] { "name", "childEntity" });
+	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.findVirtualMachines(machines, rootFolder, maxDepth, 0);
+	}
+
+	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int maxDepth, int depth) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
+		if (depth > maxDepth && maxDepth != -1) {
+			return out;
+		}
+
+		Map<String, Object> objects = VsphereQuery.getEntityProps(rootFolder, new String[] { "name", "childEntity" });
 
 		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
 			ArrayOfManagedObjectReference refs = (ArrayOfManagedObjectReference) objects.get("childEntity");
@@ -370,7 +378,7 @@ public class VsphereQuery {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
 						System.out.println(StringUtils.repeat("\t", depth) + name);
-						out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
+						out.putAll(VsphereQuery.findVirtualMachines(machines, ref, maxDepth, depth + 1));
 					} else if (ref.getType().equals("VirtualMachine")) {
 						if (machines != null) {
 							boolean flag = false;
