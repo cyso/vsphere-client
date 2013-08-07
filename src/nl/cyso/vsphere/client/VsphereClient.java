@@ -26,6 +26,7 @@ import nl.nekoconeko.configmode.Formatter;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
+import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.mo.Datacenter;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
@@ -97,6 +98,11 @@ public class VsphereClient {
 	}
 
 	public static void powerOffVM(VirtualMachine vm) throws RemoteException, Exception {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState != VirtualMachinePowerState.poweredOn) {
+			return;
+		}
+
 		Task powerOffTask = vm.powerOffVM_Task();
 		if (powerOffTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered off successfully");
@@ -111,7 +117,29 @@ public class VsphereClient {
 	}
 
 	public static void shutdownVM(VirtualMachine vm) throws RemoteException, Exception {
-		vm.shutdownGuest();
-		Formatter.printInfoLine("Success: VM shutdown message sent successfully");
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState == VirtualMachinePowerState.poweredOn) {
+			vm.shutdownGuest();
+			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
+		}
+	}
+
+	public static void deleteVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.deleteVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	}
+
+	public static void deleteVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState == VirtualMachinePowerState.poweredOn) {
+			VsphereClient.powerOffVM(vm);
+		}
+
+		Task destroyTask = vm.destroy_Task();
+		if (destroyTask.waitForTask() == Task.SUCCESS) {
+			Formatter.printInfoLine("Success: VM destroyed successfully");
+		} else {
+			String msg = "Failure: destroying [ " + vm.getName() + "] VM";
+			throw new RuntimeException(msg);
+		}
 	}
 }
