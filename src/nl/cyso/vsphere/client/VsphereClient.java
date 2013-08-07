@@ -71,11 +71,11 @@ public class VsphereClient {
 			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
 			throw new RuntimeException(msg);
 		}
-		VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), task.getAssociatedManagedEntity().getMOR());
+		ManagedObjectReference vmMor = (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
 
 		// Start the Newly Created VM.
 		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
-		VsphereClient.powerOnVM(vm.getMOR());
+		VsphereClient.powerOnVM(vmMor);
 	}
 
 	public static void powerOnVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
