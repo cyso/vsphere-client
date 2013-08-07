@@ -18,109 +18,32 @@
  */
 package nl.cyso.vsphere.client;
 
-import java.util.Map;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSession;
-import javax.xml.ws.BindingProvider;
+import java.net.URL;
 
 import nl.cyso.vsphere.client.config.Configuration;
-import nl.cyso.vsphere.client.tools.TrustAllTrustManager;
 import nl.nekoconeko.configmode.Formatter;
 
-import com.vmware.vim25.InvalidLoginFaultMsg;
-import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.ServiceContent;
-import com.vmware.vim25.VimPortType;
-import com.vmware.vim25.VimService;
+import com.vmware.vim25.mo.ServerConnection;
+import com.vmware.vim25.mo.ServiceInstance;
 
 public class VsphereManager {
-	private static boolean isConnected = false;
-
-	private static VimService vimService;
-	private static VimPortType vimPort;
-	private static ServiceContent serviceContent;
-
-	private static final ManagedObjectReference SVC_INST_REF = new ManagedObjectReference();
-	private static final String SVC_INST_NAME = "ServiceInstance";
+	private static ServiceInstance serviceInstance;
 
 	static {
-		VsphereManager.connect();
-	}
-
-	/**
-	 * Establishes session with the virtual center server.
-	 */
-	private static void connect() {
-		if (VsphereManager.isConnected()) {
-			return;
-		}
-
-		HostnameVerifier hv = new HostnameVerifier() {
-			@Override
-			public boolean verify(String urlHostName, SSLSession session) {
-				return true;
-			}
-		};
-		TrustAllTrustManager.trustAllHttpsCertificates();
-		HttpsURLConnection.setDefaultHostnameVerifier(hv);
-
-		VsphereManager.SVC_INST_REF.setType(VsphereManager.SVC_INST_NAME);
-		VsphereManager.SVC_INST_REF.setValue(VsphereManager.SVC_INST_NAME);
-
-		VsphereManager.vimService = new VimService();
-		VsphereManager.vimPort = VsphereManager.vimService.getVimPort();
-		Map<String, Object> ctxt = ((BindingProvider) VsphereManager.vimPort).getRequestContext();
-
-		ctxt.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, Configuration.getString("server"));
-		ctxt.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
-
 		try {
-			VsphereManager.serviceContent = vimPort.retrieveServiceContent(VsphereManager.SVC_INST_REF);
-			VsphereManager.vimPort.login(VsphereManager.serviceContent.getSessionManager(), Configuration.getString("username"), Configuration.getString("password"), null);
-		} catch (InvalidLoginFaultMsg e) {
-			Formatter.printErrorLine("Failed to login to vSphere");
-			Formatter.printStackTrace(e);
-			System.exit(-1);
+			VsphereManager.serviceInstance = new ServiceInstance(new URL(Configuration.getString("server")), Configuration.getString("username"), Configuration.getString("password"), true);
 		} catch (Exception e) {
-			Formatter.printErrorLine("Unknown error occurred while connecting to vSphere");
+			Formatter.printErrorLine("Failed to connect to vSphere");
 			Formatter.printStackTrace(e);
 			System.exit(-1);
 		}
-		VsphereManager.isConnected = true;
 	}
 
-	/**
-	 * Disconnects the user session.
-	 */
-	protected static void disconnect() {
-		if (VsphereManager.isConnected()) {
-			try {
-				VsphereManager.vimPort.logout(VsphereManager.serviceContent.getSessionManager());
-			} catch (RuntimeFaultFaultMsg e) {
-				Formatter.printErrorLine("Unknown error occurred while disconnecting from vSphere");
-				Formatter.printStackTrace(e);
-				System.exit(-1);
-			}
-		}
-		isConnected = false;
+	protected static ServiceInstance getServiceInstance() {
+		return serviceInstance;
 	}
 
-	protected static boolean isConnected() {
-		return isConnected;
-	}
-
-	protected static VimService getVimService() {
-		return vimService;
-	}
-
-	protected static VimPortType getVimPort() {
-		return vimPort;
-	}
-
-	protected static ServiceContent getServiceContent() {
-		return serviceContent;
+	protected static ServerConnection getServerConnection() {
+		return serviceInstance.getServerConnection();
 	}
 }

@@ -26,6 +26,12 @@ import nl.nekoconeko.configmode.Formatter;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
+import com.vmware.vim25.mo.Datacenter;
+import com.vmware.vim25.mo.Folder;
+import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.ResourcePool;
+import com.vmware.vim25.mo.Task;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereClient {
 	public static void createVirtualMachine() throws RemoteException, Exception {
@@ -48,7 +54,7 @@ public class VsphereClient {
 		}
 
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
-		ManagedObjectReference vmFolderMor = VsphereQuery.getVMRootFolder(dcmor);
+		Folder vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
 
 		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
@@ -56,46 +62,56 @@ public class VsphereClient {
 		vmConfigSpec.setMemoryMB(Long.valueOf(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.valueOf(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
-		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.UBUNTU_64_GUEST.value());
+		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.ubuntu64Guest.toString());
 
-		ManagedObjectReference taskmor = VsphereManager.getVimPort().createVMTask(vmFolderMor, vmConfigSpec, resourcepoolmor, hostmor);
-		if (VsphereQuery.getTaskResultAfterDone(taskmor)) {
+		Task task = vmFolder.createVM_Task(vmConfigSpec, new ResourcePool(VsphereManager.getServerConnection(), resourcepoolmor), new HostSystem(VsphereManager.getServerConnection(), hostmor));
+		if (task.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine(String.format("Success: Creating VM  - [ %s ] %n", Configuration.get("fqdn")));
 		} else {
 			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
 			throw new RuntimeException(msg);
 		}
-		ManagedObjectReference vmMor = (ManagedObjectReference) VsphereQuery.getEntityProps(taskmor, new String[] { "info.result" }).get("info.result");
+		ManagedObjectReference vmMor = (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
 
 		// Start the Newly Created VM.
 		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
 		VsphereClient.powerOnVM(vmMor);
-
-		VsphereManager.disconnect();
 	}
 
-	public static void powerOnVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
-		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOnVMTask(vmMor, null);
-		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
+	public static void powerOnVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.powerOnVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	}
+
+	public static void powerOnVM(VirtualMachine vm) throws RemoteException, Exception {
+		Task powerOnTask = vm.powerOnVM_Task(null);
+		if (powerOnTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered on successfully");
 		} else {
-			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
+			String msg = "Failure: starting [ " + vm.getName() + "] VM";
 			throw new RuntimeException(msg);
 		}
 	}
 
-	public static void powerOffVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
-		ManagedObjectReference cssTask = VsphereManager.getVimPort().powerOffVMTask(vmMor);
-		if (VsphereQuery.getTaskResultAfterDone(cssTask)) {
+	public static void powerOffVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.powerOffVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	}
+
+	public static void powerOffVM(VirtualMachine vm) throws RemoteException, Exception {
+		Task powerOffTask = vm.powerOffVM_Task();
+		if (powerOffTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered off successfully");
 		} else {
-			String msg = "Failure: starting [ " + vmMor.getValue() + "] VM";
+			String msg = "Failure: stopping [ " + vm.getName() + "] VM";
 			throw new RuntimeException(msg);
 		}
 	}
 
-	public static void shutdownVM(ManagedObjectReference vmMor) throws RemoteException, Exception {
-		VsphereManager.getVimPort().shutdownGuest(vmMor);
-		Formatter.printInfoLine("Success: VM shutdown requested");
+	public static void shutdownVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.shutdownVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	}
+
+	public static void shutdownVM(VirtualMachine vm) throws RemoteException, Exception {
+		vm.shutdownGuest();
+		Formatter.printInfoLine("Success: VM shutdown message sent successfully");
 	}
 }

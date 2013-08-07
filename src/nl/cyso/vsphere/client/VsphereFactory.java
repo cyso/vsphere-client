@@ -18,8 +18,7 @@
  */
 package nl.cyso.vsphere.client;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Random;
 
@@ -31,10 +30,9 @@ import com.vmware.vim25.DatastoreSummary;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
 import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
-import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ParaVirtualSCSIController;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
+import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
@@ -59,13 +57,13 @@ public class VsphereFactory {
 		return key++;
 	}
 
-	protected static VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
 		} catch (Exception e) {
 			Formatter.printErrorLine("Failed to retrieve Config Target");
-			Formatter.printError(e);
+			Formatter.printStackTrace(e);
 			System.exit(-1);
 		}
 
@@ -96,7 +94,7 @@ public class VsphereFactory {
 		VirtualMachineFileInfo vmfi = new VirtualMachineFileInfo();
 		vmfi.setVmPathName(String.format("%s", datastoreVolume));
 
-		VirtualDeviceConfigSpec scsiCtrlSpec = VsphereFactory.getScsiController(0, VirtualSCSISharing.NO_SHARING, VirtualDeviceConfigSpecOperation.ADD);
+		VirtualDeviceConfigSpec scsiCtrlSpec = VsphereFactory.getScsiController(0, VirtualSCSISharing.noSharing, VirtualDeviceConfigSpecOperation.add);
 
 		if (diskSizeMB < 10 * 1024) {
 			diskSizeMB = 10 * 1024;
@@ -110,18 +108,18 @@ public class VsphereFactory {
 		}
 
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
-		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.MANUAL, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.ADD);
+		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.manual, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
 
-		List<VirtualDeviceConfigSpec> deviceConfigSpec = new ArrayList<VirtualDeviceConfigSpec>();
-		deviceConfigSpec.addAll(Arrays.asList(scsiCtrlSpec, disk1Spec, nicSpec));
-
+		VirtualDeviceConfigSpec[] deviceConfigSpec = null;
 		if (disk2Spec != null) {
-			deviceConfigSpec.add(disk2Spec);
+			deviceConfigSpec = new VirtualDeviceConfigSpec[] { scsiCtrlSpec, disk1Spec, disk2Spec, nicSpec };
+		} else {
+			deviceConfigSpec = new VirtualDeviceConfigSpec[] { scsiCtrlSpec, disk1Spec, nicSpec };
 		}
 
 		VirtualMachineConfigSpec configSpec = new VirtualMachineConfigSpec();
 		configSpec.setFiles(vmfi);
-		configSpec.getDeviceChange().addAll(deviceConfigSpec);
+		configSpec.setDeviceChange(deviceConfigSpec);
 
 		return configSpec;
 	}
@@ -142,7 +140,7 @@ public class VsphereFactory {
 
 		diskfileBacking.setFileName("");
 		diskfileBacking.setDatastore(datastoreRef);
-		diskfileBacking.setDiskMode(VirtualDiskMode.PERSISTENT.value());
+		diskfileBacking.setDiskMode(VirtualDiskMode.persistent.toString());
 		diskfileBacking.setThinProvisioned(false);
 		diskfileBacking.setEagerlyScrub(false);
 
@@ -154,8 +152,8 @@ public class VsphereFactory {
 		disk.setKey(VsphereFactory.getKey());
 		disk.setUnitNumber(unit);
 
-		diskSpec.setFileOperation(VirtualDeviceConfigSpecFileOperation.CREATE);
-		diskSpec.setOperation(VirtualDeviceConfigSpecOperation.ADD);
+		diskSpec.setFileOperation(VirtualDeviceConfigSpecFileOperation.create);
+		diskSpec.setOperation(VirtualDeviceConfigSpecOperation.add);
 		diskSpec.setDevice(disk);
 
 		return diskSpec;
@@ -189,10 +187,10 @@ public class VsphereFactory {
 		return floppySpec;
 	}
 
-	protected static DistributedVirtualSwitchPortConnection getPortForNetworkAndSwitch(String networkName, String switchUuid) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		ManagedObjectReference netw = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "DistributedVirtualPortgroup").get(networkName);
+	protected static DistributedVirtualSwitchPortConnection getPortForNetworkAndSwitch(String networkName, String switchUuid) throws RuntimeFault, RemoteException {
+		ManagedObjectReference netw = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
 		DistributedVirtualSwitchPortConnection port = new DistributedVirtualSwitchPortConnection();
-		port.setPortgroupKey(netw.getValue());
+		port.setPortgroupKey(netw.getVal());
 		port.setSwitchUuid(switchUuid);
 
 		return port;
@@ -205,8 +203,8 @@ public class VsphereFactory {
 		VirtualEthernetCard nic = new VirtualVmxnet3();
 		nic.setBacking(nicBacking);
 		nic.setKey(VsphereFactory.getKey());
-		nic.setAddressType(mac.value());
-		if (mac == VirtualEthernetCardMacType.MANUAL) {
+		nic.setAddressType(mac.toString());
+		if (mac == VirtualEthernetCardMacType.manual) {
 			nic.setMacAddress(customMac);
 		}
 

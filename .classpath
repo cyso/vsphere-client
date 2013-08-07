@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/vim25.jar"/>
 	<classpathentry kind="lib" path="lib/configmode-991d9bd-complete.jar" sourcepath="lib/configmode-991d9bd-complete-sources.jar"/>
+	<classpathentry kind="lib" path="lib/vijava5120121125.jar" sourcepath="lib/vijava5120121125src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -18,12 +18,14 @@
  */
 package nl.cyso.vsphere.client;
 
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ArrayOfManagedObjectReference;
@@ -32,30 +34,29 @@ import com.vmware.vim25.DatastoreSummary;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
 import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DynamicProperty;
-import com.vmware.vim25.InvalidCollectorVersionFaultMsg;
-import com.vmware.vim25.InvalidPropertyFaultMsg;
-import com.vmware.vim25.LocalizedMethodFault;
+import com.vmware.vim25.InvalidProperty;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.NetworkSummary;
 import com.vmware.vim25.ObjectContent;
 import com.vmware.vim25.ObjectSpec;
-import com.vmware.vim25.ObjectUpdate;
-import com.vmware.vim25.ObjectUpdateKind;
-import com.vmware.vim25.PropertyChange;
-import com.vmware.vim25.PropertyChangeOp;
 import com.vmware.vim25.PropertyFilterSpec;
-import com.vmware.vim25.PropertyFilterUpdate;
 import com.vmware.vim25.PropertySpec;
 import com.vmware.vim25.RetrieveOptions;
 import com.vmware.vim25.RetrieveResult;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.TaskInfoState;
+import com.vmware.vim25.RuntimeFault;
+import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
-import com.vmware.vim25.UpdateSet;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
+import com.vmware.vim25.mo.ComputeResource;
+import com.vmware.vim25.mo.ContainerView;
+import com.vmware.vim25.mo.EnvironmentBrowser;
+import com.vmware.vim25.mo.Folder;
+import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.PropertyCollector;
+import com.vmware.vim25.mo.ViewManager;
 
 public class VsphereQuery {
 	/**
@@ -64,13 +65,14 @@ public class VsphereQuery {
 	 * @param folder {@link ManagedObjectReference} of the container to begin the search from
 	 * @param morefType Type of the managed entity that needs to be searched
 	 * @return Map of name and MOREF of the managed objects present. If none exist then empty Map is returned
-	 * @throws InvalidPropertyFaultMsg
-	 * @throws RuntimeFaultFaultMsg
+	 * @throws RemoteException
+	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> getMOREFsInContainerByType(ManagedObjectReference folder, String morefType) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static Map<String, ManagedObjectReference> getMOREFsInContainerByType(ManagedObjectReference folder, String morefType) throws RuntimeFault, RemoteException {
 		String PROP_ME_NAME = "name";
-		ManagedObjectReference viewManager = VsphereManager.getServiceContent().getViewManager();
-		ManagedObjectReference containerView = VsphereManager.getVimPort().createContainerView(viewManager, folder, Arrays.asList(morefType), true);
+		// ManagedObjectReference viewManager = VsphereManager.getServiceContent().getViewManager();
+		ViewManager viewManager = VsphereManager.getServiceInstance().getViewManager();
+		ContainerView containerView = viewManager.createContainerView(new Folder(VsphereManager.getServiceInstance().getServerConnection(), folder), new String[] { morefType }, true);
 
 		Map<String, ManagedObjectReference> tgtMoref = new HashMap<String, ManagedObjectReference>();
 
@@ -78,7 +80,7 @@ public class VsphereQuery {
 		PropertySpec propertySpec = new PropertySpec();
 		propertySpec.setAll(Boolean.FALSE);
 		propertySpec.setType(morefType);
-		propertySpec.getPathSet().add(PROP_ME_NAME);
+		propertySpec.setPathSet((String[]) ArrayUtils.add(propertySpec.getPathSet(), PROP_ME_NAME));
 
 		TraversalSpec ts = new TraversalSpec();
 		ts.setName("view");
@@ -88,42 +90,42 @@ public class VsphereQuery {
 
 		// Now create Object Spec
 		ObjectSpec objectSpec = new ObjectSpec();
-		objectSpec.setObj(containerView);
+		objectSpec.setObj(containerView.getMOR());
 		objectSpec.setSkip(Boolean.TRUE);
-		objectSpec.getSelectSet().add(ts);
+		objectSpec.setSelectSet((SelectionSpec[]) ArrayUtils.add(objectSpec.getSelectSet(), ts));
 
 		// Create PropertyFilterSpec using the PropertySpec and ObjectPec
 		// created above.
 		PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
-		propertyFilterSpec.getPropSet().add(propertySpec);
-		propertyFilterSpec.getObjectSet().add(objectSpec);
+		propertyFilterSpec.setPropSet((PropertySpec[]) ArrayUtils.add(propertyFilterSpec.getPropSet(), propertySpec));
+		propertyFilterSpec.setObjectSet((ObjectSpec[]) ArrayUtils.add(propertyFilterSpec.getObjectSet(), objectSpec));
 
-		List<PropertyFilterSpec> propertyFilterSpecs = new ArrayList<PropertyFilterSpec>();
-		propertyFilterSpecs.add(propertyFilterSpec);
+		PropertyFilterSpec[] propertyFilterSpecs = new PropertyFilterSpec[] { propertyFilterSpec };
+		PropertyCollector propertyCollector = VsphereManager.getServiceInstance().getPropertyCollector();
 
-		RetrieveResult rslts = VsphereManager.getVimPort().retrievePropertiesEx(VsphereManager.getServiceContent().getPropertyCollector(), propertyFilterSpecs, new RetrieveOptions());
+		RetrieveResult rslts = propertyCollector.retrievePropertiesEx(propertyFilterSpecs, new RetrieveOptions());
 		List<ObjectContent> listobjcontent = new ArrayList<ObjectContent>();
-		if (rslts != null && rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
-			listobjcontent.addAll(rslts.getObjects());
+		if (rslts != null && rslts.getObjects() != null && rslts.getObjects().length != 0) {
+			listobjcontent.addAll(Arrays.asList(rslts.getObjects()));
 		}
 		String token = null;
 		if (rslts != null && rslts.getToken() != null) {
 			token = rslts.getToken();
 		}
 		while (token != null && !token.isEmpty()) {
-			rslts = VsphereManager.getVimPort().continueRetrievePropertiesEx(VsphereManager.getServiceContent().getPropertyCollector(), token);
+			rslts = propertyCollector.continueRetrievePropertiesEx(token);
 			token = null;
 			if (rslts != null) {
 				token = rslts.getToken();
-				if (rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
-					listobjcontent.addAll(rslts.getObjects());
+				if (rslts.getObjects() != null && rslts.getObjects().length != 0) {
+					listobjcontent.addAll(Arrays.asList(rslts.getObjects()));
 				}
 			}
 		}
 		for (ObjectContent oc : listobjcontent) {
 			ManagedObjectReference mr = oc.getObj();
 			String entityNm = null;
-			List<DynamicProperty> dps = oc.getPropSet();
+			DynamicProperty[] dps = oc.getPropSet();
 			if (dps != null) {
 				for (DynamicProperty dp : dps) {
 					entityNm = (String) dp.getVal();
@@ -140,17 +142,18 @@ public class VsphereQuery {
 	 * @param entityMor {@link ManagedObjectReference} of the entity
 	 * @param props Array of properties to be looked up
 	 * @return Map of the property name and its corresponding value
-	 * @throws InvalidPropertyFaultMsg If a property does not exist
-	 * @throws RuntimeFaultFaultMsg
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 * @throws InvalidProperty
 	 */
-	protected static Map<String, Object> getEntityProps(ManagedObjectReference entityMor, String[] props) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static Map<String, Object> getEntityProps(ManagedObjectReference entityMor, String[] props) throws InvalidProperty, RuntimeFault, RemoteException {
 		HashMap<String, Object> retVal = new HashMap<String, Object>();
 
 		// Create Property Spec
 		PropertySpec propertySpec = new PropertySpec();
 		propertySpec.setAll(Boolean.FALSE);
 		propertySpec.setType(entityMor.getType());
-		propertySpec.getPathSet().addAll(Arrays.asList(props));
+		propertySpec.setPathSet(props);
 
 		// Now create Object Spec
 		ObjectSpec objectSpec = new ObjectSpec();
@@ -159,33 +162,33 @@ public class VsphereQuery {
 		// Create PropertyFilterSpec using the PropertySpec and ObjectPec
 		// created above.
 		PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
-		propertyFilterSpec.getPropSet().add(propertySpec);
-		propertyFilterSpec.getObjectSet().add(objectSpec);
+		propertyFilterSpec.setPropSet((PropertySpec[]) ArrayUtils.add(propertyFilterSpec.getPropSet(), propertySpec));
+		propertyFilterSpec.setObjectSet((ObjectSpec[]) ArrayUtils.add(propertyFilterSpec.getObjectSet(), objectSpec));
 
-		List<PropertyFilterSpec> propertyFilterSpecs = new ArrayList<PropertyFilterSpec>();
-		propertyFilterSpecs.add(propertyFilterSpec);
+		PropertyFilterSpec[] propertyFilterSpecs = new PropertyFilterSpec[] { propertyFilterSpec };
+		PropertyCollector propertyCollector = VsphereManager.getServiceInstance().getPropertyCollector();
 
-		RetrieveResult rslts = VsphereManager.getVimPort().retrievePropertiesEx(VsphereManager.getServiceContent().getPropertyCollector(), propertyFilterSpecs, new RetrieveOptions());
+		RetrieveResult rslts = propertyCollector.retrievePropertiesEx(propertyFilterSpecs, new RetrieveOptions());
 		List<ObjectContent> listobjcontent = new ArrayList<ObjectContent>();
-		if (rslts != null && rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
-			listobjcontent.addAll(rslts.getObjects());
+		if (rslts != null && rslts.getObjects() != null && rslts.getObjects().length != 0) {
+			listobjcontent.addAll(Arrays.asList(rslts.getObjects()));
 		}
 		String token = null;
 		if (rslts != null && rslts.getToken() != null) {
 			token = rslts.getToken();
 		}
 		while (token != null && !token.isEmpty()) {
-			rslts = VsphereManager.getVimPort().continueRetrievePropertiesEx(VsphereManager.getServiceContent().getPropertyCollector(), token);
+			rslts = propertyCollector.continueRetrievePropertiesEx(token);
 			token = null;
 			if (rslts != null) {
 				token = rslts.getToken();
-				if (rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
-					listobjcontent.addAll(rslts.getObjects());
+				if (rslts.getObjects() != null && rslts.getObjects().length != 0) {
+					listobjcontent.addAll(Arrays.asList(rslts.getObjects()));
 				}
 			}
 		}
 		for (ObjectContent oc : listobjcontent) {
-			List<DynamicProperty> dps = oc.getPropSet();
+			DynamicProperty[] dps = oc.getPropSet();
 			if (dps != null) {
 				for (DynamicProperty dp : dps) {
 					retVal.put(dp.getName(), dp.getVal());
@@ -204,8 +207,9 @@ public class VsphereQuery {
 	 * @throws Exception When no ConfigTarget can be found
 	 */
 	protected static ConfigTarget getConfigTargetForHost(ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws Exception {
-		ManagedObjectReference envBrowseMor = (ManagedObjectReference) VsphereQuery.getEntityProps(computeResMor, new String[] { "environmentBrowser" }).get("environmentBrowser");
-		ConfigTarget configTarget = VsphereManager.getVimPort().queryConfigTarget(envBrowseMor, hostMor);
+		EnvironmentBrowser envBrowser = new ComputeResource(VsphereManager.getServerConnection(), computeResMor).getEnvironmentBrowser();
+		HostSystem host = new HostSystem(VsphereManager.getServerConnection(), hostMor);
+		ConfigTarget configTarget = envBrowser.queryConfigTarget(host);
 		if (configTarget == null) {
 			throw new RuntimeException("No ConfigTarget found in ComputeResource");
 		}
@@ -221,17 +225,17 @@ public class VsphereQuery {
 	 * @throws Exception
 	 */
 	protected static List<VirtualDevice> getDefaultDevices(ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws Exception {
-		ManagedObjectReference envBrowseMor = (ManagedObjectReference) VsphereQuery.getEntityProps(computeResMor, new String[] { "environmentBrowser" }).get("environmentBrowser");
-		VirtualMachineConfigOption cfgOpt = VsphereManager.getVimPort().queryConfigOption(envBrowseMor, null, hostMor);
+		EnvironmentBrowser envBrowser = new EnvironmentBrowser(VsphereManager.getServiceInstance().getServerConnection(), computeResMor);
+		VirtualMachineConfigOption cfgOpt = envBrowser.queryConfigOption(null, new HostSystem(VsphereManager.getServerConnection(), hostMor));
 		List<VirtualDevice> defaultDevs = null;
 		if (cfgOpt == null) {
 			throw new RuntimeException("No VirtualHardwareInfo found in ComputeResource");
 		} else {
-			List<VirtualDevice> lvds = cfgOpt.getDefaultDevice();
+			VirtualDevice[] lvds = cfgOpt.getDefaultDevice();
 			if (lvds == null) {
 				throw new RuntimeException("No Datastore found in ComputeResource");
 			} else {
-				defaultDevs = lvds;
+				defaultDevs = Arrays.asList(lvds);
 			}
 		}
 		return defaultDevs;
@@ -246,120 +250,6 @@ public class VsphereQuery {
 		}
 
 		return volumeName;
-	}
-
-	/**
-	 * Handle Updates for a single object. waits till expected values of properties to check are reached. Destroys the ObjectFilter when done.
-	 * 
-	 * @param objmor MOR of the Object to wait for
-	 * @param filterProps Properties list to filter
-	 * @param endWaitProps Properties list to check for expected values these be properties of a property in the filter properties list
-	 * @param expectedVals values for properties to end the wait
-	 * @return true indicating expected values were met, and false otherwise
-	 * @throws RuntimeFaultFaultMsg
-	 * @throws InvalidPropertyFaultMsg
-	 * @throws InvalidCollectorVersionFaultMsg
-	 */
-	protected static Object[] waitForValues(ManagedObjectReference objmor, String[] filterProps, String[] endWaitProps, Object[][] expectedVals) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg, InvalidCollectorVersionFaultMsg {
-		// version string is initially null
-		String version = "";
-		Object[] endVals = new Object[endWaitProps.length];
-		Object[] filterVals = new Object[filterProps.length];
-
-		PropertyFilterSpec spec = new PropertyFilterSpec();
-		ObjectSpec oSpec = new ObjectSpec();
-		oSpec.setObj(objmor);
-		oSpec.setSkip(Boolean.FALSE);
-		spec.getObjectSet().add(oSpec);
-
-		PropertySpec pSpec = new PropertySpec();
-		pSpec.getPathSet().addAll(Arrays.asList(filterProps));
-		pSpec.setType(objmor.getType());
-		spec.getPropSet().add(pSpec);
-
-		ManagedObjectReference filterSpecRef = VsphereManager.getVimPort().createFilter(VsphereManager.getServiceContent().getPropertyCollector(), spec, true);
-
-		boolean reached = false;
-
-		UpdateSet updateset = null;
-		List<PropertyFilterUpdate> filtupary = null;
-		List<ObjectUpdate> objupary = null;
-		List<PropertyChange> propchgary = null;
-		while (!reached) {
-			updateset = VsphereManager.getVimPort().waitForUpdates(VsphereManager.getServiceContent().getPropertyCollector(), version);
-			if (updateset == null || updateset.getFilterSet() == null) {
-				continue;
-			}
-			version = updateset.getVersion();
-
-			// Make this code more general purpose when PropCol changes later.
-			filtupary = updateset.getFilterSet();
-
-			for (PropertyFilterUpdate filtup : filtupary) {
-				objupary = filtup.getObjectSet();
-				for (ObjectUpdate objup : objupary) {
-					if (objup.getKind() == ObjectUpdateKind.MODIFY || objup.getKind() == ObjectUpdateKind.ENTER || objup.getKind() == ObjectUpdateKind.LEAVE) {
-						propchgary = objup.getChangeSet();
-						for (PropertyChange propchg : propchgary) {
-							updateValues(endWaitProps, endVals, propchg);
-							updateValues(filterProps, filterVals, propchg);
-						}
-					}
-				}
-			}
-
-			Object expctdval = null;
-			// Check if the expected values have been reached and exit the loop
-			// if done.
-			// Also exit the WaitForUpdates loop if this is the case.
-			for (int chgi = 0; chgi < endVals.length && !reached; chgi++) {
-				for (int vali = 0; vali < expectedVals[chgi].length && !reached; vali++) {
-					expctdval = expectedVals[chgi][vali];
-
-					reached = expctdval.equals(endVals[chgi]) || reached;
-				}
-			}
-		}
-
-		// Destroy the filter when we are done.
-		VsphereManager.getVimPort().destroyPropertyFilter(filterSpecRef);
-		return filterVals;
-	}
-
-	protected static void updateValues(String[] props, Object[] vals, PropertyChange propchg) {
-		for (int findi = 0; findi < props.length; findi++) {
-			if (propchg.getName().lastIndexOf(props[findi]) >= 0) {
-				if (propchg.getOp() == PropertyChangeOp.REMOVE) {
-					vals[findi] = "";
-				} else {
-					vals[findi] = propchg.getVal();
-				}
-			}
-		}
-	}
-
-	/**
-	 * This method returns a boolean value specifying whether the Task is succeeded or failed.
-	 * 
-	 * @param task ManagedObjectReference representing the Task.
-	 * @return boolean value representing the Task result.
-	 * @throws InvalidCollectorVersionFaultMsg
-	 * @throws RuntimeFaultFaultMsg
-	 * @throws InvalidPropertyFaultMsg
-	 */
-	protected static boolean getTaskResultAfterDone(ManagedObjectReference task) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg, InvalidCollectorVersionFaultMsg {
-		boolean retVal = false;
-
-		// info has a property - state for state of the task
-		Object[] result = VsphereQuery.waitForValues(task, new String[] { "info.state", "info.error" }, new String[] { "state" }, new Object[][] { new Object[] { TaskInfoState.SUCCESS, TaskInfoState.ERROR } });
-
-		if (result[0].equals(TaskInfoState.SUCCESS)) {
-			retVal = true;
-		}
-		if (result[1] instanceof LocalizedMethodFault) {
-			throw new RuntimeException(((LocalizedMethodFault) result[1]).getLocalizedMessage());
-		}
-		return retVal;
 	}
 
 	protected static List<NetworkSummary> getNetworksForConfigTarget(ConfigTarget config, String keyFilter) {
@@ -424,76 +314,79 @@ public class VsphereQuery {
 		return output;
 	}
 
-	protected static ManagedObjectReference getDatacenterReference(String name) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceContent().getRootFolder(), "Datacenter").get(name);
+	protected static ManagedObjectReference getDatacenterReference(String name) throws RuntimeFault, RemoteException {
+		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "Datacenter").get(name);
 	}
 
-	protected static ManagedObjectReference getHostNodeReference(String name, String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getHostNodeReference(String name, String dc) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
 		return VsphereQuery.getHostNodeReference(name, dcmor);
 	}
 
-	protected static ManagedObjectReference getHostNodeReference(String name, ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getHostNodeReference(String name, ManagedObjectReference dc) throws RuntimeFault, RemoteException {
 		return VsphereQuery.getMOREFsInContainerByType(dc, "HostSystem").get(name);
 	}
 
-	protected static ManagedObjectReference getReferenceParent(ManagedObjectReference object) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getReferenceParent(ManagedObjectReference object) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(object, new String[] { "parent" }).get("parent");
 	}
 
-	protected static ManagedObjectReference getResourcePoolReference(String esxnode, String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getResourcePoolReference(String esxnode, String dc) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
 		return VsphereQuery.getResourcePoolReference(esxnode, dcmor);
 	}
 
-	protected static ManagedObjectReference getResourcePoolReference(String esxnode, ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getResourcePoolReference(String esxnode, ManagedObjectReference dc) throws InvalidProperty, RuntimeFault, RemoteException {
 		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(esxnode, dc);
 		return VsphereQuery.getResourcePoolReference(hostmor);
 	}
 
-	protected static ManagedObjectReference getResourcePoolReference(ManagedObjectReference esxnode) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getResourcePoolReference(ManagedObjectReference esxnode) throws InvalidProperty, RuntimeFault, RemoteException {
 		ManagedObjectReference crmor = VsphereQuery.getReferenceParent(esxnode);
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(crmor, new String[] { "resourcePool" }).get("resourcePool");
 	}
 
-	protected static ManagedObjectReference getVMRootFolder(String dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getVMRootFolder(String dc) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
 		return VsphereQuery.getVMRootFolder(dcmor);
 	}
 
-	protected static ManagedObjectReference getVMRootFolder(ManagedObjectReference dc) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static ManagedObjectReference getVMRootFolder(ManagedObjectReference dc) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(dc, new String[] { "vmFolder" }).get("vmFolder");
 	}
 
-	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
 		return VsphereQuery.findVirtualMachines(machines, rootFolder, 0);
 	}
 
-	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int depth) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int depth) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, Object> objects = VsphereQuery.getEntityProps(rootFolder, new String[] { "name", "childEntity" });
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 
 		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
-			for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
-				String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
-				if (ref.getType().equals("Folder")) {
-					System.out.println(StringUtils.repeat("\t", depth) + name);
-					out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
-				} else if (ref.getType().equals("VirtualMachine")) {
-					if (machines != null) {
-						boolean flag = false;
-						for (String machine : machines) {
-							if (name.contains(machine)) {
-								flag = true;
-								break;
+			ArrayOfManagedObjectReference refs = (ArrayOfManagedObjectReference) objects.get("childEntity");
+			if (refs.getManagedObjectReference() != null) {
+				for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
+					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
+					if (ref.getType().equals("Folder")) {
+						System.out.println(StringUtils.repeat("\t", depth) + name);
+						out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
+					} else if (ref.getType().equals("VirtualMachine")) {
+						if (machines != null) {
+							boolean flag = false;
+							for (String machine : machines) {
+								if (name.contains(machine)) {
+									flag = true;
+									break;
+								}
+							}
+							if (!flag) {
+								continue;
 							}
 						}
-						if (!flag) {
-							continue;
-						}
+						System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
+						out.put(name, ref);
 					}
-					System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
-					out.put(name, ref);
 				}
 			}
 		}
