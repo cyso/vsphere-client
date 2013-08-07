@@ -364,26 +364,29 @@ public class VsphereQuery {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 
 		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
-			for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
-				String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
-				if (ref.getType().equals("Folder")) {
-					System.out.println(StringUtils.repeat("\t", depth) + name);
-					out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
-				} else if (ref.getType().equals("VirtualMachine")) {
-					if (machines != null) {
-						boolean flag = false;
-						for (String machine : machines) {
-							if (name.contains(machine)) {
-								flag = true;
-								break;
+			ArrayOfManagedObjectReference refs = (ArrayOfManagedObjectReference) objects.get("childEntity");
+			if (refs.getManagedObjectReference() != null) {
+				for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
+					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
+					if (ref.getType().equals("Folder")) {
+						System.out.println(StringUtils.repeat("\t", depth) + name);
+						out.putAll(VsphereQuery.findVirtualMachines(machines, ref, depth + 1));
+					} else if (ref.getType().equals("VirtualMachine")) {
+						if (machines != null) {
+							boolean flag = false;
+							for (String machine : machines) {
+								if (name.contains(machine)) {
+									flag = true;
+									break;
+								}
+							}
+							if (!flag) {
+								continue;
 							}
 						}
-						if (!flag) {
-							continue;
-						}
+						System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
+						out.put(name, ref);
 					}
-					System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
-					out.put(name, ref);
 				}
 			}
 		}
