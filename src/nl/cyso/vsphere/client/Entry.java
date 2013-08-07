@@ -64,7 +64,7 @@ public class Entry {
 			if (Configuration.has("help-type")) {
 				ConfigModes.printConfigModeHelp(Configuration.get("help-type").toString());
 			} else {
-				ConfigModes.printConfigModeHelp("root");
+				ConfigModes.printConfigModeHelp("ROOT");
 			}
 			System.exit(0);
 		}
@@ -78,7 +78,7 @@ public class Entry {
 		}
 
 		if (!Configuration.has("username") || !Configuration.has("password") || !Configuration.has("server")) {
-			Formatter.usageError("No credentials were set, or server uri was missing", "root");
+			Formatter.usageError("No credentials were set, or server uri was missing", "ROOT", false);
 		}
 
 		String mode = Configuration.getString("mode");
