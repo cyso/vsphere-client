@@ -76,8 +76,6 @@ public class VsphereClient {
 		// Start the Newly Created VM.
 		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
 		VsphereClient.powerOnVM(vm.getMOR());
-
-		VsphereManager.disconnect();
 	}
 
 	public static void powerOnVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
