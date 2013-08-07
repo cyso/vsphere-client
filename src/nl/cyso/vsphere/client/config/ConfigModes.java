@@ -60,8 +60,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
 		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
 
-		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode);
-		List<ConfigParameter> selectionopts2 = Arrays.asList(folder, cluster, storage);
+		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode, storage);
+		List<ConfigParameter> selectionopts2 = Arrays.asList(folder, cluster);
 
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
