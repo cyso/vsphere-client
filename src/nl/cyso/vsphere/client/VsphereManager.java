@@ -46,4 +46,8 @@ public class VsphereManager {
 	protected static ServerConnection getServerConnection() {
 		return serviceInstance.getServerConnection();
 	}
+
+	protected static void disconnect() {
+		VsphereManager.getServerConnection().logout();
+	}
 }
