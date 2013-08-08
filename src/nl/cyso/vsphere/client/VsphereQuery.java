@@ -357,14 +357,14 @@ public class VsphereQuery {
 	}
 
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
-		return VsphereQuery.findVMObjects(machines, rootFolder, -1, 0, VMFolderObjectType.VirtualMachine);
+		return VsphereQuery.findVMFolderObjects(machines, rootFolder, -1, 0, VMFolderObjectType.VirtualMachine);
 	}
 
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
-		return VsphereQuery.findVMObjects(machines, rootFolder, maxDepth, 0, VMFolderObjectType.VirtualMachine);
+		return VsphereQuery.findVMFolderObjects(machines, rootFolder, maxDepth, 0, VMFolderObjectType.VirtualMachine);
 	}
 
-	private static Map<String, ManagedObjectReference> findVMObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type) throws InvalidProperty, RuntimeFault, RemoteException {
+	private static Map<String, ManagedObjectReference> findVMFolderObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 		if (depth > maxDepth && maxDepth != -1) {
 			return out;
@@ -392,7 +392,7 @@ public class VsphereQuery {
 							}
 						}
 
-						out.putAll(VsphereQuery.findVMObjects(filters, ref, maxDepth, depth + 1, type));
+						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
 					} else if (ref.getType().equals("VirtualMachine")) {
 						if (filters != null && !filters.isEmpty()) {
 							boolean flag = false;
@@ -452,7 +452,7 @@ public class VsphereQuery {
 				partCounter += 1;
 				continue;
 			}
-			Map<String, ManagedObjectReference> found = VsphereQuery.findVMObjects(Arrays.asList(part), vmRoot, 0, 0, VMFolderObjectType.Folder);
+			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, 0, 0, VMFolderObjectType.Folder);
 
 			if (found.size() != 1) {
 				continue;

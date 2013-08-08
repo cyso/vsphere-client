@@ -66,7 +66,7 @@ public class VsphereClient {
 			vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
 		}
 
-		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.valueOf(Configuration.getString("memory")));
@@ -84,11 +84,11 @@ public class VsphereClient {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
 	}
 
-	public static void powerOnVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.powerOnVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void powerOnVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.powerOnVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
 	}
 
-	public static void powerOnVM(VirtualMachine vm) throws RemoteException, Exception {
+	public static void powerOnVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
 		Task powerOnTask = vm.powerOnVM_Task(null);
 		if (powerOnTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered on successfully");
@@ -98,11 +98,11 @@ public class VsphereClient {
 		}
 	}
 
-	public static void powerOffVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.powerOffVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void powerOffVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.powerOffVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
 	}
 
-	public static void powerOffVM(VirtualMachine vm) throws RemoteException, Exception {
+	public static void powerOffVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState != VirtualMachinePowerState.poweredOn) {
 			return;
@@ -117,11 +117,11 @@ public class VsphereClient {
 		}
 	}
 
-	public static void shutdownVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.shutdownVM(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void shutdownVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
+		VsphereClient.shutdownVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
 	}
 
-	public static void shutdownVM(VirtualMachine vm) throws RemoteException, Exception {
+	public static void shutdownVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState == VirtualMachinePowerState.poweredOn) {
 			vm.shutdownGuest();
@@ -136,7 +136,7 @@ public class VsphereClient {
 	public static void deleteVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState == VirtualMachinePowerState.poweredOn) {
-			VsphereClient.powerOffVM(vm);
+			VsphereClient.powerOffVirtualMachine(vm);
 		}
 
 		Task destroyTask = vm.destroy_Task();

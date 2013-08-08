@@ -57,7 +57,7 @@ public class VsphereFactory {
 		return key++;
 	}
 
-	protected static VirtualMachineConfigSpec createVmConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
+	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
