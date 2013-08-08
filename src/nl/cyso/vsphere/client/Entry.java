@@ -20,6 +20,7 @@ package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
 import java.util.Map;
+import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Configuration;
@@ -162,8 +163,9 @@ public class Entry {
 				if (objects == null || objects.isEmpty()) {
 					Formatter.printInfoLine("No objects found!");
 				} else {
+					Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
 					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
-					for (java.util.Map.Entry<String, ManagedObjectReference> object : objects.entrySet()) {
+					for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
 						Formatter.printInfoLine(object.getKey());
 					}
 				}
