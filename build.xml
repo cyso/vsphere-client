@@ -62,6 +62,11 @@
 		<map from="${basedir}" to="."/>
 	</pathconvert>
 
+	<pathconvert property="jython.class.path" pathsep=":">
+		<path refid="dist_libraries"/>
+		<map from="${basedir}" to="."/>
+	</pathconvert>
+
 	<target name="print-classpath" description="Show the dependency class path">
 		<property name="relpath" value="${project.class.path}" relative="yes" basedir="${basedir}"/>
 		<echo>${relpath}</echo>
@@ -102,6 +107,13 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 		<chmod file="${executable}-debug" perm="a+x"/>
 	</target>
 
+	<!-- Create an easy to use Jython stub -->
+	<target name="jython-stub" depends="compile" description="Create an easy to use Jython stub file">
+		<echo file="${executable}-jython" append="false">#!/bin/sh
+java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.path=${project.class.path} "$$@"</echo>
+		<chmod file="${executable}-jython" perm="a+x"/>
+	</target>
+
 	<target name="git-revision" description="Store git revision in ${version}" if="git.present">
 		<exec executable="git" outputproperty="version" failifexecutionfails="false" errorproperty="">
 			<arg value="describe"/>
@@ -129,7 +141,7 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 	</target>
 	
 	<!-- Create a clean dist directory -->
-	<target name="dist" depends="executable" description="Create a clean dist directory">
+	<target name="dist" depends="executable,jython-stub" description="Create a clean dist directory">
 		<delete dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}/${docs.dir}"/>
@@ -161,9 +173,13 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 
 		<echo file="${dist.dir}/${executable}" append="false">#!/bin/sh
 DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
-java -jar $DIR/${executable}.jar ${root.package}.${entry.point} "$$@"</echo>
+java -jar $DIR/${executable}-${version}.jar ${root.package}.${entry.point} "$$@"</echo>
+		<echo file="${dist.dir}/${executable}-jython" append="false">#!/bin/sh
+DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
+java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.path=${jython.class.path} "$$@"</echo>
 		
 		<chmod file="${dist.dir}/${executable}" perm="a+x"/>
+		<chmod file="${dist.dir}/${executable}-jython" perm="a+x"/>
 	</target>
 
 	<target name="bump-version" depends="git-revision" description="Bump the BUILD_VERSION version number">
@@ -186,6 +202,7 @@ java -jar $DIR/${executable}.jar ${root.package}.${entry.point} "$$@"</echo>
 		<tar destfile="${executable}-${version}.tar.bz2" compression="bzip2">
 			<tarfileset dir="." preserveleadingslashes="false">
 				<include name="${executable}-${version}/**" />
+				<exclude name="${executable}-${version}/vsphere-client-jython" />
 			</tarfileset>
 		</tar>
 		<move tofile="${dist.dir}" file="${executable}-${version}" />
