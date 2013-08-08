@@ -141,7 +141,7 @@ java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.p
 	</target>
 	
 	<!-- Create a clean dist directory -->
-	<target name="dist" depends="executable,jython-stub" description="Create a clean dist directory">
+	<target name="dist" depends="executable,jython-stub,man-page,readme" description="Create a clean dist directory">
 		<delete dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}/${docs.dir}"/>
@@ -157,6 +157,7 @@ java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.p
 			</fileset>
 		</copy>
 
+		<copy file="${docs.dir}/${executable}.1" tofile="${dist.dir}/${docs.dir}/${executable}.1" />
 		<copy file="README.md" tofile="${dist.dir}/README.md" />
 
 		<jar destfile="${dist.dir}/${executable}-${version}.jar" basedir="${class.root}">
