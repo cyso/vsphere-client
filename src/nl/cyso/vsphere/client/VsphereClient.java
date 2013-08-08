@@ -35,23 +35,23 @@ import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereClient {
-	public static void createVirtualMachine() throws RemoteException, Exception {
+	public static ManagedObjectReference createVirtualMachine() throws RemoteException, Exception {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(Configuration.getString("dc"));
 		if (dcmor == null) {
 			Formatter.printErrorLine("Datacenter " + Configuration.get("dc") + " not found.");
-			return;
+			return null;
 		}
 
 		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
 		if (hostmor == null) {
 			Formatter.printErrorLine("Host " + Configuration.get("esxnode") + " not found");
-			return;
+			return null;
 		}
 
 		ManagedObjectReference crmor = VsphereQuery.getReferenceParent(hostmor);
 		if (crmor == null) {
 			Formatter.printErrorLine("No Compute Resource Found On Specified Host");
-			return;
+			return null;
 		}
 
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
@@ -72,11 +72,7 @@ public class VsphereClient {
 			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
 			throw new RuntimeException(msg);
 		}
-		ManagedObjectReference vmMor = (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
-
-		// Start the Newly Created VM.
-		System.out.println("Powering on the newly created VM " + Configuration.get("fqdn"));
-		VsphereClient.powerOnVM(vmMor);
+		return (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
 	}
 
 	public static void powerOnVM(ManagedObjectReference vmmor) throws RemoteException, Exception {
