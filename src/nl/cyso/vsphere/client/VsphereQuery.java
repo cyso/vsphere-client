@@ -357,6 +357,16 @@ public class VsphereQuery {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(dc, new String[] { "vmFolder" }).get("vmFolder");
 	}
 
+	protected static ManagedObjectReference findVirtualMachine(String name, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
+		Map<String, ManagedObjectReference> result = VsphereQuery.findVirtualMachines(Arrays.asList(name), rootFolder);
+
+		if (result == null || result.isEmpty()) {
+			return null;
+		} else {
+			return result.get(name);
+		}
+	}
+
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
 		return VsphereQuery.findVMFolderObjects(machines, rootFolder, -1, 0, VMFolderObjectType.VirtualMachine);
 	}
