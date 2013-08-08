@@ -370,6 +370,10 @@ public class VsphereQuery {
 			return out;
 		}
 
+		if (rootFolder == null) {
+			throw new NullPointerException("Passed Root Folder was null!");
+		}
+
 		Map<String, Object> objects = VsphereQuery.getEntityProps(rootFolder, new String[] { "name", "childEntity" });
 
 		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {

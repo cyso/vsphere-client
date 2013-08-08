@@ -55,7 +55,16 @@ public class VsphereClient {
 		}
 
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
-		Folder vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
+		Folder vmFolder = null;
+		if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
+			ManagedObjectReference folderMor = VsphereQuery.findVirtualMachineFolder(dcmor, Configuration.getString("folder"));
+			if (folderMor == null) {
+				throw new RuntimeException(String.format("Could not find VM folder [%s]", Configuration.getString("folder")));
+			}
+			vmFolder = new Folder(VsphereManager.getServerConnection(), folderMor);
+		} else {
+			vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
+		}
 
 		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVmConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
