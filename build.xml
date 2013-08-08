@@ -27,16 +27,19 @@
 	<property name="dist.dir" value="dist"/>
 	<property name="libs.dir" value="lib"/>
 	<property name="docs.dir" value="doc"/>
+	<property name="vendors.dir" value="vendor"/>
 	<property name="root.package" value="nl.cyso.vsphere.client"/>
 	<property name="entry.point" value="Entry"/>
 	<property name="executable" value="vsphere-client"/>
 
-	<available file=".git" type="dir" property="git.present"/>
+	<available file=".git" property="git.present"/>
 
 	<path id="libraries">
 		<pathelement location="${class.root}"/> 
 		<fileset dir="${libs.dir}">
 			<include name="*.jar"/>
+			<exclude name="*-javadoc.jar"/>
+			<exclude name="*-sources.jar"/>
 		</fileset>
 	</path>
 
@@ -78,7 +81,7 @@
 	</target>
 
 	<!-- Compile the java source of the project -->
-	<target name="compile" depends="prepare" description="Compiles all Java classes">
+	<target name="compile" depends="prepare,update-vendor" description="Compiles all Java classes">
 		<javac srcdir="${source.root}"
 		       destdir="${class.root}"
 		       debug="on"
@@ -113,6 +116,16 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 			</and>
 		</condition>
 		<echo>${executable} BUILD_VERSION is ${version}</echo>
+	</target>
+
+	<target name="update-vendor" description="Update all vendor libraries">
+		<delete>
+			<fileset dir="${libs.dir}" includes="configmode*.jar" />
+		</delete>
+		<ant dir="${vendors.dir}/configmodes" target="dist" useNativeBasedir="true" inheritAll="false" inheritRefs="false" />
+		<copy todir="${libs.dir}">
+			<fileset dir="${vendors.dir}/configmodes/dist" includes="configmode-*-complete*.jar" />
+		</copy>
 	</target>
 	
 	<!-- Create a clean dist directory -->

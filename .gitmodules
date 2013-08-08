@@ -1,0 +1,3 @@
+[submodule "vendor/configmodes"]
+	path = vendor/configmodes
+	url = git@gitlab.cyso.net:nick.douma/configmodes.git
