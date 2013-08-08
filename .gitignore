@@ -1,9 +1,15 @@
+## Working directories
 bin
 classes
 dist
-vsphere-client
-vsphere-client-debug
+
+## Config files
+*.config
+
+## Ant generated files
+vsphere-client*
 doc/*.1
 *.tar.bz2
-*.config
+
+## Ant generated vendor libraries
 lib/configmode-*.jar
