@@ -56,12 +56,11 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
 		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder");
-		ConfigParameter cluster = new ConfigParameter("cluster", true, "C", "Select this Cluster");
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
 		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
 
 		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode, storage);
-		List<ConfigParameter> selectionopts2 = Arrays.asList(folder, cluster);
+		List<ConfigParameter> selectionopts2 = Arrays.asList(folder);
 
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);

@@ -21,9 +21,9 @@
 #dc=
 # Select this folder
 #folder=
-# Select this cluster
-#cluster=
 # Select this storage pool
 #storage=
+# Select this ESX node
+#esxnode=
 # Select this template
 #template=
