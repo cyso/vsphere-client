@@ -57,6 +57,7 @@ import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.PropertyCollector;
+import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.ViewManager;
 
 public class VsphereQuery {
@@ -69,7 +70,7 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> getMOREFsInContainerByType(ManagedObjectReference folder, String morefType) throws RuntimeFault, RemoteException {
+	private static Map<String, ManagedObjectReference> getMOREFsInContainerByType(ManagedObjectReference folder, String morefType) throws RuntimeFault, RemoteException {
 		String PROP_ME_NAME = "name";
 		// ManagedObjectReference viewManager = VsphereManager.getServiceContent().getViewManager();
 		ViewManager viewManager = VsphereManager.getServiceInstance().getViewManager();
@@ -147,7 +148,7 @@ public class VsphereQuery {
 	 * @throws RuntimeFault
 	 * @throws InvalidProperty
 	 */
-	protected static Map<String, Object> getEntityProps(ManagedObjectReference entityMor, String[] props) throws InvalidProperty, RuntimeFault, RemoteException {
+	private static Map<String, Object> getEntityProps(ManagedObjectReference entityMor, String[] props) throws InvalidProperty, RuntimeFault, RemoteException {
 		HashMap<String, Object> retVal = new HashMap<String, Object>();
 
 		// Create Property Spec
@@ -467,5 +468,17 @@ public class VsphereQuery {
 		} else {
 			return null;
 		}
+	}
+
+	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.getTaskInfoResult(task.getMOR());
+	}
+
+	protected static ManagedObjectReference getTaskInfoResult(ManagedObjectReference taskMor) throws InvalidProperty, RuntimeFault, RemoteException {
+		return (ManagedObjectReference) VsphereQuery.getEntityProps(taskMor, new String[] { "info.result" }).get("info.result");
+	}
+
+	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
+		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
 	}
 }

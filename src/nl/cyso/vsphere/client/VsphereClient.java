@@ -81,7 +81,7 @@ public class VsphereClient {
 			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
 			throw new RuntimeException(msg);
 		}
-		return (ManagedObjectReference) VsphereQuery.getEntityProps(task.getMOR(), new String[] { "info.result" }).get("info.result");
+		return VsphereQuery.getTaskInfoResult(task);
 	}
 
 	public static void powerOnVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {

@@ -188,7 +188,7 @@ public class VsphereFactory {
 	}
 
 	protected static DistributedVirtualSwitchPortConnection getPortForNetworkAndSwitch(String networkName, String switchUuid) throws RuntimeFault, RemoteException {
-		ManagedObjectReference netw = VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
+		ManagedObjectReference netw = VsphereQuery.getDistributedVirtualPortGroupForNetwork(networkName);
 		DistributedVirtualSwitchPortConnection port = new DistributedVirtualSwitchPortConnection();
 		port.setPortgroupKey(netw.getVal());
 		port.setSwitchUuid(switchUuid);
