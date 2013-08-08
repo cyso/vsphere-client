@@ -82,7 +82,7 @@ public class Entry {
 		}
 
 		if (!Configuration.has("username") || !Configuration.has("password") || !Configuration.has("server")) {
-			Formatter.usageError("No credentials were set, or server uri was missing", "ROOT", false);
+			Formatter.usageError("No credentials were set, or server uri was missing", "ROOT", true);
 		}
 
 		try {
