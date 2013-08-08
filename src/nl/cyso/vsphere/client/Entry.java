@@ -31,6 +31,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
 
 import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class Entry {
 
@@ -157,7 +159,16 @@ public class Entry {
 					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder);
 				} else {
 					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder);
-					objects = VsphereQuery.findVirtualMachines(null, folder, 0);
+					int depth = 0;
+					if (Configuration.has("depth")) {
+						try {
+							depth = Integer.parseInt(Configuration.getString("depth"));
+						} catch (NumberFormatException nfe) {
+							Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
+						}
+					}
+
+					objects = VsphereQuery.findVirtualMachines(null, folder, depth);
 				}
 
 				if (objects == null || objects.isEmpty()) {
@@ -166,7 +177,15 @@ public class Entry {
 					Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
 					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
 					for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
-						Formatter.printInfoLine(object.getKey());
+						if (!Configuration.has("detailed") || Configuration.getString("list-type").equals("FOLDER")) {
+							Formatter.printInfoLine(object.getKey());
+							continue;
+						}
+
+						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
+						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+
+						Formatter.printInfoLine(String.format("%40s - %20s - CPU:%d/MEM:%d", vm.getName(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
 					}
 				}
 			} else {
