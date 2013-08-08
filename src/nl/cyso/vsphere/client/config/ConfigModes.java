@@ -46,7 +46,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|template|storage)");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm)");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
@@ -102,10 +102,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigMode list = new ConfigMode();
 		list.addRequiredOption(listmode);
 		list.addOptions(configopts);
-		list.addOption(dc);
+		list.addRequiredOption(dc);
 		list.addOption(folder);
-		list.addOption(cluster);
-		list.addOption(storage);
 
 		ConfigMode addvm = new ConfigMode();
 		addvm.addRequiredOption(addmode);

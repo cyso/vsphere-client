@@ -19,6 +19,7 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.Map;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Configuration;
@@ -101,7 +102,7 @@ public class Entry {
 				}
 
 				if (rootFolder == null) {
-					Formatter.printErrorLine("Could not select VM Root folder");
+					Formatter.printErrorLine("Could not select root Virtual Machine folder");
 					System.exit(-1);
 				}
 
@@ -127,6 +128,47 @@ public class Entry {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.shutdownVirtualMachine(vm);
 				}
+			} else if (mode.equals("LIST")) {
+				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
+					Formatter.usageError("Invalid List type selected", "LIST", true);
+				}
+
+				Configuration.load("LIST", args);
+
+				Formatter.printInfoLine("Selecting root Virtual Machine folder");
+
+				String rootFolder;
+				if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
+					rootFolder = Configuration.getString("folder");
+				} else {
+					rootFolder = "/";
+				}
+
+				if (rootFolder == null) {
+					Formatter.printErrorLine("Could not select root Virtual Machine folder");
+					System.exit(-1);
+				}
+
+				Formatter.printInfoLine("Walking tree");
+
+				Map<String, ManagedObjectReference> objects;
+				if (Configuration.getString("list-type").equals("FOLDER")) {
+					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder);
+				} else {
+					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder);
+					objects = VsphereQuery.findVirtualMachines(null, folder, 0);
+				}
+
+				if (objects == null || objects.isEmpty()) {
+					Formatter.printInfoLine("No objects found!");
+				} else {
+					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
+					for (java.util.Map.Entry<String, ManagedObjectReference> object : objects.entrySet()) {
+						Formatter.printInfoLine(object.getKey());
+					}
+				}
+			} else {
+				throw new UnsupportedOperationException("Mode not yet implemented");
 			}
 		} catch (RemoteException re) {
 			Formatter.printError("Failed to execute action: ");

@@ -394,13 +394,20 @@ public class VsphereQuery {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
 						// System.out.println(StringUtils.repeat("\t", depth) + name);
-						if (type == VMFolderObjectType.Folder) {
+						if (filters != null && !filters.isEmpty()) {
+							boolean flag = false;
 							for (String folder : filters) {
 								if (name.equalsIgnoreCase(folder)) {
-									out.put(name, ref);
+									flag = true;
 									break;
 								}
 							}
+							if (!flag) {
+								continue;
+							}
+						}
+						if (type == VMFolderObjectType.Folder) {
+							out.put(name, ref);
 						}
 
 						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
@@ -440,7 +447,7 @@ public class VsphereQuery {
 	 */
 	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
-		return findVirtualMachineFolder(dc, name);
+		return VsphereQuery.findVirtualMachineFolder(dc, name);
 	}
 
 	/**
@@ -478,6 +485,35 @@ public class VsphereQuery {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Walks the given Datacenter, and finds all subfolders of the given path. Paths should be passed as a Unix style folder, for instance: /Customers/E/Example. This function is NOT recursive.
+	 * 
+	 * @return
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 */
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(String datacenter, String path) throws RuntimeFault, RemoteException {
+		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
+		return VsphereQuery.findVirtualMachineFolders(dc, path);
+	}
+
+	/**
+	 * Walks the given Datacenter, and finds all subfolders of the given path. Paths should be passed as a Unix style folder, for instance: /Customers/E/Example. This function is NOT recursive.
+	 * 
+	 * @return
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 */
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(ManagedObjectReference dc, String path) throws InvalidProperty, RuntimeFault, RemoteException {
+		ManagedObjectReference rootFolder = VsphereQuery.findVirtualMachineFolder(dc, path);
+
+		if (rootFolder == null) {
+			return null;
+		}
+
+		return VsphereQuery.findVMFolderObjects(null, rootFolder, 0, 0, VMFolderObjectType.Folder);
 	}
 
 	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
