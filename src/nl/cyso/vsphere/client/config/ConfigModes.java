@@ -118,22 +118,26 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		removevm.addRequiredOption(removemode);
 		removevm.addOptions(configopts);
 		removevm.addRequiredOption(fqdn);
-		removevm.addOption(mac);
+		removevm.addRequiredOption(dc);
+		removevm.addOption(folder);
 
 		ConfigMode poweronvm = new ConfigMode();
 		poweronvm.addOptions(configopts);
 		poweronvm.addRequiredOption(fqdn);
-		poweronvm.addOption(mac);
+		poweronvm.addRequiredOption(dc);
+		poweronvm.addOption(folder);
 
 		ConfigMode poweroffvm = new ConfigMode();
 		poweroffvm.addOptions(configopts);
 		poweroffvm.addRequiredOption(fqdn);
-		poweroffvm.addOption(mac);
+		poweroffvm.addRequiredOption(dc);
+		poweroffvm.addOption(folder);
 
 		ConfigMode shutdownvm = new ConfigMode();
 		shutdownvm.addOptions(configopts);
 		shutdownvm.addRequiredOption(fqdn);
-		shutdownvm.addOption(mac);
+		shutdownvm.addRequiredOption(dc);
+		shutdownvm.addOption(folder);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);
