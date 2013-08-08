@@ -28,6 +28,8 @@ import nl.nekoconeko.configmode.Formatter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
 
+import com.vmware.vim25.ManagedObjectReference;
+
 public class Entry {
 
 	/**
@@ -81,18 +83,59 @@ public class Entry {
 			Formatter.usageError("No credentials were set, or server uri was missing", "ROOT", false);
 		}
 
-		String mode = Configuration.getString("mode");
-		if (mode.equals("ADDVM")) {
-			Configuration.load("ADDVM", args);
-			try {
+		try {
+			String mode = Configuration.getString("mode");
+			if (mode.equals("ADDVM")) {
+				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM")) {
+				Configuration.load(mode, args);
+
+				Formatter.printInfoLine("Selecting root Virtual Machine folder");
+
+				ManagedObjectReference rootFolder;
+				if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
+					rootFolder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), Configuration.getString("folder"));
+				} else {
+					rootFolder = VsphereQuery.getVMRootFolder(Configuration.getString("dc"));
+				}
+
+				if (rootFolder == null) {
+					Formatter.printErrorLine("Could not select VM Root folder");
+					System.exit(-1);
+				}
+
+				Formatter.printInfoLine("Walking folder to find Virtual Machine");
+
+				ManagedObjectReference vm = VsphereQuery.findVirtualMachine(Configuration.getString("fqdn"), rootFolder);
+
+				if (vm == null) {
+					Formatter.printErrorLine("Could not find VM");
+					System.exit(-1);
+				}
+
+				if (mode.equals("REMOVEVM")) {
+					Formatter.printInfoLine("Removing Virtual Machine: " + Configuration.getString("fqdn"));
+					VsphereClient.deleteVirtualMachine(vm);
+				} else if (mode.equals("POWERONVM")) {
+					Formatter.printInfoLine("Powering on Virtual Machine: " + Configuration.getString("fqdn"));
+					VsphereClient.powerOnVirtualMachine(vm);
+				} else if (mode.equals("POWEROFFVM")) {
+					Formatter.printInfoLine("Powering off Virtual Machine: " + Configuration.getString("fqdn"));
+					VsphereClient.powerOffVirtualMachine(vm);
+				} else if (mode.equals("SHUTDOWNVM")) {
+					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
+					VsphereClient.shutdownVirtualMachine(vm);
+				}
 			}
+		} catch (RemoteException re) {
+			Formatter.printError("Failed to execute action: ");
+			Formatter.printErrorLine(re);
+		} catch (Exception e) {
+			Formatter.printErrorLine("An unexpected error occurred: ");
+			Formatter.printStackTrace(e);
+		} finally {
+			VsphereManager.disconnect();
 		}
 	}
 }
