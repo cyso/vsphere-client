@@ -25,8 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.cyso.vsphere.client.constants.VMFolderObjectType;
+
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ConfigTarget;
@@ -356,14 +357,14 @@ public class VsphereQuery {
 	}
 
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder) throws InvalidProperty, RuntimeFault, RemoteException {
-		return VsphereQuery.findVirtualMachines(machines, rootFolder, -1, 0);
+		return VsphereQuery.findVMObjects(machines, rootFolder, -1, 0, VMFolderObjectType.VirtualMachine);
 	}
 
 	protected static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
-		return VsphereQuery.findVirtualMachines(machines, rootFolder, maxDepth, 0);
+		return VsphereQuery.findVMObjects(machines, rootFolder, maxDepth, 0, VMFolderObjectType.VirtualMachine);
 	}
 
-	private static Map<String, ManagedObjectReference> findVirtualMachines(List<String> machines, ManagedObjectReference rootFolder, int maxDepth, int depth) throws InvalidProperty, RuntimeFault, RemoteException {
+	private static Map<String, ManagedObjectReference> findVMObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 		if (depth > maxDepth && maxDepth != -1) {
 			return out;
@@ -377,13 +378,22 @@ public class VsphereQuery {
 				for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
-						System.out.println(StringUtils.repeat("\t", depth) + name);
-						out.putAll(VsphereQuery.findVirtualMachines(machines, ref, maxDepth, depth + 1));
+						// System.out.println(StringUtils.repeat("\t", depth) + name);
+						if (type == VMFolderObjectType.Folder) {
+							for (String folder : filters) {
+								if (name.equalsIgnoreCase(folder)) {
+									out.put(name, ref);
+									break;
+								}
+							}
+						}
+
+						out.putAll(VsphereQuery.findVMObjects(filters, ref, maxDepth, depth + 1, type));
 					} else if (ref.getType().equals("VirtualMachine")) {
-						if (machines != null) {
+						if (filters != null && !filters.isEmpty()) {
 							boolean flag = false;
-							for (String machine : machines) {
-								if (name.contains(machine)) {
+							for (String machine : filters) {
+								if (name.equalsIgnoreCase(machine)) {
 									flag = true;
 									break;
 								}
@@ -392,13 +402,66 @@ public class VsphereQuery {
 								continue;
 							}
 						}
-						System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
-						out.put(name, ref);
+						// System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
+						if (type == VMFolderObjectType.VirtualMachine) {
+							out.put(name, ref);
+						}
 					}
 				}
 			}
 		}
 
 		return out;
+	}
+
+	/**
+	 * Walks the given Datacenter, and finds a Folder reference based on the given path. Paths should be passed as a Unix style folder, for instance: /Customers/E/Example
+	 * 
+	 * @param datacenter
+	 * @param name
+	 * @return Returns a {@link ManagedObjectReference} if found, null if not.
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 */
+	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name) throws RuntimeFault, RemoteException {
+		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
+		return findVirtualMachineFolder(dc, name);
+	}
+
+	/**
+	 * Walks the given Datacenter, and finds a Folder reference based on the given path. Paths should be passed as a Unix style folder, for instance: /Customers/E/Example
+	 * 
+	 * @param datacenter
+	 * @param name
+	 * @return Returns a {@link ManagedObjectReference} if found, null if not.
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 * @throws InvalidProperty
+	 */
+	protected static ManagedObjectReference findVirtualMachineFolder(ManagedObjectReference dc, String name) throws InvalidProperty, RuntimeFault, RemoteException {
+		String[] nameParts = name.split("/");
+		int partCounter = 0;
+		ManagedObjectReference vmRoot = VsphereQuery.getVMRootFolder(dc);
+
+		for (String part : nameParts) {
+			if (part.equals("") && partCounter == 0) {
+				partCounter += 1;
+				continue;
+			}
+			Map<String, ManagedObjectReference> found = VsphereQuery.findVMObjects(Arrays.asList(part), vmRoot, 0, 0, VMFolderObjectType.Folder);
+
+			if (found.size() != 1) {
+				continue;
+			}
+
+			vmRoot = found.get(part);
+			partCounter += 1;
+		}
+
+		if (partCounter == nameParts.length) {
+			return vmRoot;
+		} else {
+			return null;
+		}
 	}
 }
