@@ -159,6 +159,8 @@ java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.p
 
 		<copy file="${docs.dir}/${executable}.1" tofile="${dist.dir}/${docs.dir}/${executable}.1" />
 		<copy file="README.md" tofile="${dist.dir}/README.md" />
+		<mkdir dir="${class.root}/META-INF" />
+		<copy file="LICENSE" tofile="${class.root}/META-INF/LICENSE" />
 
 		<jar destfile="${dist.dir}/${executable}-${version}.jar" basedir="${class.root}">
 			<manifest>
@@ -171,6 +173,8 @@ java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.p
 				<attribute name="Main-Class" value="nl.cyso.vsphere.client.Entry"/>
 			</manifest>
 		</jar>
+
+		<delete dir="${class.root}/META-INF" />
 
 		<echo file="${dist.dir}/${executable}" append="false">#!/bin/sh
 DIR="$( cd "$( dirname "$0" )" &amp;&amp; pwd )"
