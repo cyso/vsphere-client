@@ -394,7 +394,7 @@ public class VsphereQuery {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
 						// System.out.println(StringUtils.repeat("\t", depth) + name);
-						if (filters != null && !filters.isEmpty()) {
+						if (type == VMFolderObjectType.Folder && filters != null && !filters.isEmpty()) {
 							boolean flag = false;
 							for (String folder : filters) {
 								if (name.equalsIgnoreCase(folder)) {
@@ -405,8 +405,6 @@ public class VsphereQuery {
 							if (!flag) {
 								continue;
 							}
-						}
-						if (type == VMFolderObjectType.Folder) {
 							out.put(name, ref);
 						}
 
