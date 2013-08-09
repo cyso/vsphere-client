@@ -13,3 +13,8 @@ doc/*.1
 
 ## Ant generated vendor libraries
 lib/configmode-*.jar
+
+## Debian build files
+debian/*.1
+debian/*.install
+debian/*.manifest
