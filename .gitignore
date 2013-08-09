@@ -1,15 +1,26 @@
 ## Working directories
-bin
-classes
-dist
+/bin
+/classes
+/dist
 
 ## Config files
-*.config
+/*.config
 
 ## Ant generated files
-vsphere-client*
-doc/*.1
-*.tar.bz2
+/vsphere-client*
+/doc/*.1
+/*.tar.bz2
 
 ## Ant generated vendor libraries
-lib/configmode-*.jar
+/lib/configmode-*.jar
+
+## Debian build files
+/debian/*.1
+/debian/*.install
+/debian/*.manifest
+/debian/files
+/debian/tmp
+/debian/*.log
+/debian/*.substvars
+/debian/vsphere-client
+/debian/*.README.*
