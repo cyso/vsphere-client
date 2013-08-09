@@ -55,7 +55,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
-		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder");
+		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder. Specify as a Unix path, e.g.: /Customers/C");
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
 		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
 
