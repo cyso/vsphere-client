@@ -1,20 +1,19 @@
 Source: vsphere-client
 Priority: extra
 Maintainer: Nick Douma <n.douma@nekoconeko.nl>
-Build-Depends: debhelper (>= 7.0.50~), javahelper (>=0.25)
-Build-Depends-Indep: default-jdk, ant
+Build-Depends: debhelper (>= 7.0.50~)
+Build-Depends-Indep: default-jdk, ant, javahelper (>=0.25)
 Standards-Version: 3.9.0
 Section: utils
 
 Package: vsphere-client
 Architecture: all
-Depends: ${java:Depends}, ${misc:Depends}
-Recommends: ${java:Recommends}
+Depends: ${misc:Depends}, coreutils, default-jre
 Description: vsphere-client - a tool to manage vSphere datacenter objects
  vsphere-client is a tool to manage objects in vSphere, using the vSphere API.
-  
-  There are several modes of operation, all of which can be found in the synopsis below. Each mode has a different set of required and optional arguments, which can also be found in the synopsis. Help mode can be used in a context sensitive manner. For example, *-h* will show all the modes, and *-h ADDVM* will show help about the ADDVM mode.
-   
-  All commands require proper authentication. This can be provided on the command line by using *-u -p -s* or by creating a configuration file and specifying it with *-c config-file*
-  **vsphere-client** is licensed under the GPLv3 license. For more information, see the *LICENSE* file.
-  This project uses libraries and routines which may have a different license. Refer to the included licenses in the source files and/or JAR files for more information.
+ .
+ There are several modes of operation, all of which can be found in the synopsis below. Each mode has a different set of required and optional arguments, which can also be found in the synopsis. Help mode can be used in a context sensitive manner. For example, *-h* will show all the modes, and *-h ADDVM* will show help about the ADDVM mode.
+ .
+ All commands require proper authentication. This can be provided on the command line by using *-u -p -s* or by creating a configuration file and specifying it with *-c config-file*
+ **vsphere-client** is licensed under the GPLv3 license. For more information, see the *LICENSE* file.
+ This project uses libraries and routines which may have a different license. Refer to the included licenses in the source files and/or JAR files for more information.

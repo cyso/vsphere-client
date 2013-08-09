@@ -7,3 +7,13 @@ JAVA_HOME=/usr/lib/jvm/default-java
 
 override_dh_link:
 	dh_link usr/share/vsphere-client/vsphere-client usr/bin/vsphere-client
+
+override_dh_auto_build:
+	dh_auto_build -- dist
+
+override_dh_install:
+	dh_auto_build -- package-debian
+	dh_install
+
+override_jh_exec:
+	exit 0
