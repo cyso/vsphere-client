@@ -1,5 +1,5 @@
 vsphere-client - a tool to manage vSphere datacenter objects
------------------------------------------------------------
+-------------------------------------------------------------
 
 **vsphere-client** is a tool to manage objects in vSphere, using the vSphere API.
 
@@ -17,6 +17,157 @@ Building **vsphere-client** requires the following:
 2. Apache Ant >= 1.8
 
 Then you can simply call `ant dist` to create a *dist* folder with everything vsphere-client needs to run. You can also use `ant package-tar` to create a tarball
+
+SYNOPSIS
+--------
+	
+	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -r | -t | -v | -y | -z [-c <FILE>]   [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
+
+**HELP**
+
+	vsphere-client -h <COMMAND>
+
+**ADDVM**
+
+	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> --esxnode <E> [--folder <F>] --fqdn <FQDN> --mac <MAC> --memory <MEM> --network <NETWORK> --os <OS> [-p <PASSWORD>] [-s <SERVER>] --storage <S> --template <TEMPLATE> [-u <USER>]
+
+**POWERONVM**
+
+	vsphere-client [-c <FILE>] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+
+**VERSION**
+
+	vsphere-client -v
+
+**LIST**
+
+	vsphere-client [-c <FILE>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] -l <TYPE> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+
+**POWEROFFVM**
+
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+
+**SHUTDOWNVM**
+
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+
+**REMOVEVM**
+
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] -r [-s <SERVER>] [-u <USER>]
+
+OPTIONS
+-------
+**-a** **--add-vm** *arg* 
+
+Add a new VM
+
+**-c** **--config** *FILE* 
+
+Use a configuration file
+
+**--confirm** 
+
+Confirm destructive actions, and allow them to execute.
+
+**--cpu** *CPU* 
+
+Amount of CPUs (cores) of the object to create
+
+**--dc** *VDC* 
+
+Select this Data Center
+
+**--depth** *DEPTH* 
+
+How deep to recurse into the Virtual Machine tree. Currently only used by --list vm
+
+**--description** *DESC* 
+
+Description of object to create
+
+**--detailed** 
+
+Output detailed information about the selected objects
+
+**--disk** *DISK* 
+
+Disk size (in MB) of the object to create
+
+**--esxnode** *E* 
+
+Select this ESX node
+
+**--folder** *F* 
+
+Select this Folder. Specify as a Unix path, e.g.: /Customers/C
+
+**--fqdn** *FQDN* 
+
+Name of object to create
+
+**-h** **--help** *COMMAND* 
+
+Show help and examples
+
+**-l** **--list** *TYPE* 
+
+List vSphere objects (folder|vm)
+
+**--mac** *MAC* 
+
+MAC address of the object to create
+
+**--memory** *MEM* 
+
+Memory (in MB) of the object to create
+
+**--network** *NETWORK* 
+
+Network of the object to create
+
+**--os** *OS* 
+
+Operating System of the object to create
+
+**-p** **--password** *PASSWORD* 
+
+vSphere password
+
+**-r** **--remove-vm** *arg* 
+
+Remove a VM. Requires confirmation
+
+**-s** **--server** *SERVER* 
+
+vSphere server URI
+
+**--storage** *S* 
+
+Select this Storage Pool
+
+**--template** *TEMPLATE* 
+
+Select this template
+
+**-t** **--poweroff-vm** *arg* 
+
+Stop an existing VM (hard shutdown). Requires confirmation
+
+**-u** **--username** *USER* 
+
+vSphere username
+
+**-v** **--version** *arg* 
+
+Show version information
+
+**-y** **--poweron-vm** *arg* 
+
+Start an existing VM
+
+**-z** **--shutdown-vm** *arg* 
+
+Shutdown an existing VM (soft shutdown). Requires confirmation
 
 CONFIGURATION
 -------------
