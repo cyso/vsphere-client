@@ -48,10 +48,10 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
 		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm)");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
-		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM");
+		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
-		ConfigParameter poweroffmode = new ConfigParameter("t", "poweroff-vm", false, "Stop an existing VM (hard shutdown)");
-		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown)");
+		ConfigParameter poweroffmode = new ConfigParameter("t", "poweroff-vm", false, "Stop an existing VM (hard shutdown). Requires confirmation");
+		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
 
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
@@ -74,6 +74,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
 		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
+
+		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
 		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, mac, cpu, memory, os, disk);
 
@@ -123,6 +125,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		removevm.addRequiredOption(fqdn);
 		removevm.addRequiredOption(dc);
 		removevm.addOption(folder);
+		removevm.addOption(confirm);
 
 		ConfigMode poweronvm = new ConfigMode();
 		poweronvm.addOptions(configopts);
@@ -135,12 +138,14 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		poweroffvm.addRequiredOption(fqdn);
 		poweroffvm.addRequiredOption(dc);
 		poweroffvm.addOption(folder);
+		poweroffvm.addOption(confirm);
 
 		ConfigMode shutdownvm = new ConfigMode();
 		shutdownvm.addOptions(configopts);
 		shutdownvm.addRequiredOption(fqdn);
 		shutdownvm.addRequiredOption(dc);
 		shutdownvm.addOption(folder);
+		shutdownvm.addOption(confirm);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);

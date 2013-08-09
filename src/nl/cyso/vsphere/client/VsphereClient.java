@@ -98,13 +98,18 @@ public class VsphereClient {
 		}
 	}
 
-	public static void powerOffVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.powerOffVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void powerOffVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
+		VsphereClient.powerOffVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
 	}
 
-	public static void powerOffVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
+	public static void powerOffVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState != VirtualMachinePowerState.poweredOn) {
+			return;
+		}
+
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have powered off VM %s now, but confirmation was not given.", vm.getName()));
 			return;
 		}
 
@@ -117,26 +122,36 @@ public class VsphereClient {
 		}
 	}
 
-	public static void shutdownVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.shutdownVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void shutdownVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
+		VsphereClient.shutdownVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
 	}
 
-	public static void shutdownVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
+	public static void shutdownVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState == VirtualMachinePowerState.poweredOn) {
+			if (!confirmed) {
+				Formatter.printInfoLine(String.format("WhatIf: Would have shutdown VM %s now, but confirmation was not given.", vm.getName()));
+				return;
+			}
+
 			vm.shutdownGuest();
 			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
 		}
 	}
 
-	public static void deleteVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
-		VsphereClient.deleteVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor));
+	public static void deleteVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
+		VsphereClient.deleteVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
 	}
 
-	public static void deleteVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
+	public static void deleteVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState == VirtualMachinePowerState.poweredOn) {
-			VsphereClient.powerOffVirtualMachine(vm);
+			VsphereClient.powerOffVirtualMachine(vm, confirmed);
+		}
+
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have destroyed VM %s now, but confirmation was not given.", vm.getName()));
+			return;
 		}
 
 		Task destroyTask = vm.destroy_Task();

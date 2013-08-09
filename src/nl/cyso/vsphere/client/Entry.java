@@ -120,16 +120,16 @@ public class Entry {
 
 				if (mode.equals("REMOVEVM")) {
 					Formatter.printInfoLine("Removing Virtual Machine: " + Configuration.getString("fqdn"));
-					VsphereClient.deleteVirtualMachine(vm);
+					VsphereClient.deleteVirtualMachine(vm, Configuration.has("confirm"));
 				} else if (mode.equals("POWERONVM")) {
 					Formatter.printInfoLine("Powering on Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.powerOnVirtualMachine(vm);
 				} else if (mode.equals("POWEROFFVM")) {
 					Formatter.printInfoLine("Powering off Virtual Machine: " + Configuration.getString("fqdn"));
-					VsphereClient.powerOffVirtualMachine(vm);
+					VsphereClient.powerOffVirtualMachine(vm, Configuration.has("confirm"));
 				} else if (mode.equals("SHUTDOWNVM")) {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
-					VsphereClient.shutdownVirtualMachine(vm);
+					VsphereClient.shutdownVirtualMachine(vm, Configuration.has("confirm"));
 				}
 			} else if (mode.equals("LIST")) {
 				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
