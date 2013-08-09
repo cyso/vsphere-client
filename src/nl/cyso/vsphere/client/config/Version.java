@@ -30,7 +30,7 @@ public class Version extends nl.nekoconeko.configmode.Version {
 	/**
 	 * Actual Git revision according to `git describe` during bumping
 	 */
-	public final String BUILD_VERSION = "000000";
+	public final String BUILD_VERSION = "68eb5e9";
 
 	private static Version instance = null;
 
