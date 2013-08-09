@@ -89,6 +89,12 @@ public class VsphereClient {
 	}
 
 	public static void powerOnVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState != VirtualMachinePowerState.poweredOff) {
+			Formatter.printInfoLine("Warning: VM was not in a powered off state, no action performed.");
+			return;
+		}
+
 		Task powerOnTask = vm.powerOnVM_Task(null);
 		if (powerOnTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered on successfully");
@@ -105,6 +111,7 @@ public class VsphereClient {
 	public static void powerOffVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
 		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
 		if (powerState != VirtualMachinePowerState.poweredOn) {
+			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
 			return;
 		}
 
@@ -136,6 +143,8 @@ public class VsphereClient {
 
 			vm.shutdownGuest();
 			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
+		} else {
+			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
 		}
 	}
 
