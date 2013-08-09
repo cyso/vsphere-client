@@ -24,7 +24,7 @@ public class Version extends nl.nekoconeko.configmode.Version {
 	 */
 	public final String PROJECT_NAME = "vsphere-client";
 	/**
-	 * Official release version of vcloud-login
+	 * Official release version of vsphere-client
 	 */
 	public final String RELEASE_VERSION = "0.1";
 	/**

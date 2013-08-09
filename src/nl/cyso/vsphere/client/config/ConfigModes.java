@@ -36,9 +36,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter config = new ConfigParameter("c", "config", true, "FILE", "Use a configuration file");
 
 		// Connection information
-		ConfigParameter username = new ConfigParameter("u", "username", true, "USER", "vCloud Director username");
-		ConfigParameter password = new ConfigParameter("p", "password", true, "PASSWORD", "vCloud Director password");
-		ConfigParameter server = new ConfigParameter("s", "server", true, "SERVER", "vCloud Director server URI");
+		ConfigParameter username = new ConfigParameter("u", "username", true, "USER", "vSphere username");
+		ConfigParameter password = new ConfigParameter("p", "password", true, "PASSWORD", "vSphere password");
+		ConfigParameter server = new ConfigParameter("s", "server", true, "SERVER", "vSphere server URI");
 
 		List<ConfigParameter> configopts = Arrays.asList(config, username, password, server);
 
