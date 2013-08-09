@@ -194,9 +194,11 @@ public class Entry {
 		} catch (RemoteException re) {
 			Formatter.printError("Failed to execute action: ");
 			Formatter.printErrorLine(re);
+			System.exit(-1);
 		} catch (Exception e) {
 			Formatter.printErrorLine("An unexpected error occurred: ");
 			Formatter.printStackTrace(e);
+			System.exit(-1);
 		} finally {
 			VsphereManager.disconnect();
 		}
