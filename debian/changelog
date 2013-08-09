@@ -1,0 +1,66 @@
+vsphere-client (0.1) precise; urgency=low
+
+  * Add a placeholde README, for now
+  * Properly define ConfigMode keys
+  * Reorder and fix cli parameters
+  * Make Configuration handle its own Exceptions
+  * Update configmode library.
+  * First dirty commit of VsphereClient
+  * Refactor all the code!
+  * Fix issues with bus numbers and remove CDrom device code
+  * Move logic to seperate function getPortForNetworkAndSwitch
+  * Set description and number of cores explicitely
+  * Remove IP config option
+  * Poweron VM after creation
+  * Disks larger than 10GB will now be split into two disks of 10GB + the rest
+  * Make VsphereClient static
+  * Add powerOffVM and shutdownVM
+  * Add lots of Query functions
+  * Move createVmConfigSpec function to VsphereFactory
+  * Use Formatter for info output
+  * Implement first version of findVirtualMachines
+  * Add version to dist output jars
+  * Remove vim25.jar dependency and add vijava*.jar
+  * Rewrite code to use vijava instead of vim sdk
+  * Remove connect/disconnect logic, it is handled by vijava
+  * Retrieve the VM reference from the create VM task, and start it
+  * Avoid NPE when doing getManagedObjectReference in findVirtualMachines
+  * Update ConfigMode library
+  * Fix wrong reference to ROOT ConfigMode
+  * Make exiting on errors optional.
+  * Add optional limit to findVirtualMachines
+  * Add powerState checking to powerOffVM and shutdownVM, and add deleteVirtualMachine
+  * Add ConfigModes as a submodule and build .jar dynamically
+  * Rename vijava5120121125src.jar to vijava5120121125-sources.jar
+  * Add disconnect method to VsphereManager
+  * Cleanup .gitignore
+  * Add generation of jython stub shell script to Ant build script
+  * Add missing dom4j to .classpath
+  * Make createVirtualMachine return a ManagedObjectReference and don't autostart new VM
+  * Refactor findVirtualMachines into findVMObjects and add findVirtualMachineFolder
+  * Honor the passed folder argument in CreateVirtualMachine
+  * Refactor method names to be more consistent
+  * Refactor code and move low-level method calls to appropriate class
+  * Add findVirtualMachine
+  * Implement ADDVM, REMOVEVM, POWERONVM, POWEROFFVM, SHUTDOWNVM
+  * Fix Options for REMOVEVM, POWERONVM, POWEROFFVM and SHUTDOWNVM.
+  * Implement VM and Folder list mode
+  * Sort objects in list mode
+  * Exit on missing server credentials
+  * Add detailed view for VMs in list mode, and recursive depth support
+  * Remove cluster ConfigParameter
+  * Update configmodes vendor
+  * Add ManPage and README generator
+  * Add man-page and readme to dist Ant target
+  * Remove all references to vcloud-client.
+  * Require confirmation for destructive commands
+  * Exit with error code on caught Exception in Entry
+  * Add messages when checking power states
+  * Fix findVMFolderObjects not recursing as expected in VirtualMachine mode
+  * Clarify folder syntax in help message
+  * Add LICENSE to source and resulting jar file
+  * Add first version of Debian packaging stuff
+  * Actually make debian package building work
+  * Bump version, regenerate README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Fri, 09 Aug 2013 17:37:12 +0200
