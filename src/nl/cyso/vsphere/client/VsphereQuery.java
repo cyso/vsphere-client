@@ -376,6 +376,10 @@ public class VsphereQuery {
 	}
 
 	private static Map<String, ManagedObjectReference> findVMFolderObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.findVMFolderObjects(filters, rootFolder, maxDepth, depth, type, null);
+	}
+
+	private static Map<String, ManagedObjectReference> findVMFolderObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type, String parentName) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 		if (depth > maxDepth && maxDepth != -1) {
 			return out;
@@ -407,9 +411,9 @@ public class VsphereQuery {
 							}
 						}
 						if (type == VMFolderObjectType.Folder) {
-							out.put(name, ref);
+							out.put(String.format("%s/%s", (parentName == null) ? "" : parentName, name), ref);
 						}
-						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
+						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type, String.format("%s/%s", (parentName == null) ? "" : parentName, name)));
 					} else if (ref.getType().equals("VirtualMachine")) {
 						if (filters != null && !filters.isEmpty()) {
 							boolean flag = false;
@@ -475,7 +479,7 @@ public class VsphereQuery {
 				break;
 			}
 
-			vmRoot = found.get(part);
+			vmRoot = found.values().iterator().next();
 			partCounter += 1;
 		}
 
