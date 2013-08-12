@@ -429,7 +429,7 @@ public class VsphereQuery {
 						}
 						// System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
 						if (type == VMFolderObjectType.VirtualMachine) {
-							out.put(name, ref);
+							out.put(String.format("%s/%s", (parentName == null) ? "" : parentName, name), ref);
 						}
 					}
 				}
