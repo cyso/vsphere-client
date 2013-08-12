@@ -405,7 +405,8 @@ public class VsphereQuery {
 							if (!flag) {
 								continue;
 							}
-						} else if (type == VMFolderObjectType.Folder) {
+						}
+						if (type == VMFolderObjectType.Folder) {
 							out.put(name, ref);
 						}
 						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
@@ -471,7 +472,7 @@ public class VsphereQuery {
 			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, maxDepth, 0, VMFolderObjectType.Folder);
 
 			if (found.size() != 1) {
-				continue;
+				break;
 			}
 
 			vmRoot = found.get(part);
