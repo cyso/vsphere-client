@@ -405,9 +405,9 @@ public class VsphereQuery {
 							if (!flag) {
 								continue;
 							}
+						} else if (type == VMFolderObjectType.Folder) {
 							out.put(name, ref);
 						}
-
 						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
 					} else if (ref.getType().equals("VirtualMachine")) {
 						if (filters != null && !filters.isEmpty()) {
