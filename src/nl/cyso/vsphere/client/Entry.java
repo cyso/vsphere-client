@@ -99,7 +99,7 @@ public class Entry {
 
 				ManagedObjectReference rootFolder;
 				if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
-					rootFolder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), Configuration.getString("folder"));
+					rootFolder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), Configuration.getString("folder"), 0);
 				} else {
 					rootFolder = VsphereQuery.getVMRootFolder(Configuration.getString("dc"));
 				}
@@ -154,19 +154,20 @@ public class Entry {
 
 				Formatter.printInfoLine("Walking tree");
 
+				int depth = 0;
+				if (Configuration.has("depth")) {
+					try {
+						depth = Integer.parseInt(Configuration.getString("depth"));
+					} catch (NumberFormatException nfe) {
+						Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
+					}
+				}
+
 				Map<String, ManagedObjectReference> objects;
 				if (Configuration.getString("list-type").equals("FOLDER")) {
-					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder);
+					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder, depth);
 				} else {
-					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder);
-					int depth = 0;
-					if (Configuration.has("depth")) {
-						try {
-							depth = Integer.parseInt(Configuration.getString("depth"));
-						} catch (NumberFormatException nfe) {
-							Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
-						}
-					}
+					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder, 0);
 
 					objects = VsphereQuery.findVirtualMachines(null, folder, depth);
 				}

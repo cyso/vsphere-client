@@ -443,9 +443,9 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name) throws RuntimeFault, RemoteException {
+	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name, int maxDepth) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
-		return VsphereQuery.findVirtualMachineFolder(dc, name);
+		return VsphereQuery.findVirtualMachineFolder(dc, name, maxDepth);
 	}
 
 	/**
@@ -458,7 +458,7 @@ public class VsphereQuery {
 	 * @throws RuntimeFault
 	 * @throws InvalidProperty
 	 */
-	protected static ManagedObjectReference findVirtualMachineFolder(ManagedObjectReference dc, String name) throws InvalidProperty, RuntimeFault, RemoteException {
+	protected static ManagedObjectReference findVirtualMachineFolder(ManagedObjectReference dc, String name, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
 		String[] nameParts = name.split("/");
 		int partCounter = 0;
 		ManagedObjectReference vmRoot = VsphereQuery.getVMRootFolder(dc);
@@ -468,7 +468,7 @@ public class VsphereQuery {
 				partCounter += 1;
 				continue;
 			}
-			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, 0, 0, VMFolderObjectType.Folder);
+			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, maxDepth, 0, VMFolderObjectType.Folder);
 
 			if (found.size() != 1) {
 				continue;
@@ -492,9 +492,9 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(String datacenter, String path) throws RuntimeFault, RemoteException {
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(String datacenter, String path, int maxDepth) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
-		return VsphereQuery.findVirtualMachineFolders(dc, path);
+		return VsphereQuery.findVirtualMachineFolders(dc, path, maxDepth);
 	}
 
 	/**
@@ -504,14 +504,14 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(ManagedObjectReference dc, String path) throws InvalidProperty, RuntimeFault, RemoteException {
-		ManagedObjectReference rootFolder = VsphereQuery.findVirtualMachineFolder(dc, path);
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(ManagedObjectReference dc, String path, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
+		ManagedObjectReference rootFolder = VsphereQuery.findVirtualMachineFolder(dc, path, 0);
 
 		if (rootFolder == null) {
 			return null;
 		}
 
-		return VsphereQuery.findVMFolderObjects(null, rootFolder, 0, 0, VMFolderObjectType.Folder);
+		return VsphereQuery.findVMFolderObjects(null, rootFolder, maxDepth, 0, VMFolderObjectType.Folder);
 	}
 
 	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {

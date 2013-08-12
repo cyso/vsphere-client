@@ -57,7 +57,7 @@ public class VsphereClient {
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);
 		Folder vmFolder = null;
 		if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
-			ManagedObjectReference folderMor = VsphereQuery.findVirtualMachineFolder(dcmor, Configuration.getString("folder"));
+			ManagedObjectReference folderMor = VsphereQuery.findVirtualMachineFolder(dcmor, Configuration.getString("folder"), 0);
 			if (folderMor == null) {
 				throw new RuntimeException(String.format("Could not find VM folder [%s]", Configuration.getString("folder")));
 			}
