@@ -186,7 +186,7 @@ public class Entry {
 						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
 
-						Formatter.printInfoLine(String.format("%40s - %20s - CPU:%d/MEM:%d", vm.getName(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						Formatter.printInfoLine(String.format("%-45s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
 					}
 				}
 			} else {
