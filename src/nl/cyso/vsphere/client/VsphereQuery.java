@@ -363,7 +363,7 @@ public class VsphereQuery {
 		if (result == null || result.isEmpty()) {
 			return null;
 		} else {
-			return result.get(name);
+			return result.get("/" + name);
 		}
 	}
 
