@@ -38,20 +38,17 @@ public class VsphereClient {
 	public static ManagedObjectReference createVirtualMachine() throws RemoteException, Exception {
 		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(Configuration.getString("dc"));
 		if (dcmor == null) {
-			Formatter.printErrorLine("Datacenter " + Configuration.get("dc") + " not found.");
-			return null;
+			throw new RuntimeException("Datacenter " + Configuration.get("dc") + " not found.");
 		}
 
 		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
 		if (hostmor == null) {
-			Formatter.printErrorLine("Host " + Configuration.get("esxnode") + " not found");
-			return null;
+			throw new RuntimeException("Host " + Configuration.get("esxnode") + " not found");
 		}
 
 		ManagedObjectReference crmor = VsphereQuery.getReferenceParent(hostmor);
 		if (crmor == null) {
-			Formatter.printErrorLine("No Compute Resource Found On Specified Host");
-			return null;
+			throw new RuntimeException("No Compute Resource Found On Specified Host");
 		}
 
 		ManagedObjectReference resourcepoolmor = VsphereQuery.getResourcePoolReference(hostmor);

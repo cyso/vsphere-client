@@ -193,6 +193,10 @@ public class Entry {
 				throw new UnsupportedOperationException("Mode not yet implemented");
 			}
 		} catch (RemoteException re) {
+			Formatter.printError("An error occured on vSphere: ");
+			Formatter.printErrorLine(re);
+			System.exit(-1);
+		} catch (RuntimeException re) {
 			Formatter.printError("Failed to execute action: ");
 			Formatter.printErrorLine(re);
 			System.exit(-1);
