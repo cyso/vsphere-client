@@ -219,6 +219,26 @@ public class VsphereQuery {
 	}
 
 	/**
+	 * This method returns the ConfigTarget for a VirtualMachine.
+	 * 
+	 * @param vmMor A MoRef to the VirtualMachine
+	 * @param hostMor A MoRef to the HostSystem
+	 * @return Instance of ConfigTarget for the supplied VirtualMachine
+	 * @throws Exception When no ConfigTarget can be found
+	 */
+	protected static ConfigTarget getConfigTargetForVirtualMachine(ManagedObjectReference vmMor) throws Exception {
+		EnvironmentBrowser envBrowser = new VirtualMachine(VsphereManager.getServerConnection(), vmMor).getEnvironmentBrowser();
+		if (envBrowser == null) {
+			return null;
+		}
+		ConfigTarget configTarget = envBrowser.queryConfigTarget(null);
+		if (configTarget == null) {
+			throw new RuntimeException("No ConfigTarget found in ComputeResource");
+		}
+		return configTarget;
+	}
+
+	/**
 	 * The method returns the default devices from the HostSystem.
 	 * 
 	 * @param computeResMor A MoRef to the ComputeResource used by the HostSystem
