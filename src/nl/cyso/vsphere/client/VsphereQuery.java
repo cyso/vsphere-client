@@ -48,17 +48,22 @@ import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VirtualDevice;
+import com.vmware.vim25.VirtualDeviceBackingInfo;
+import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
+import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
+import com.vmware.vim25.mo.DistributedVirtualPortgroup;
 import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.PropertyCollector;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.ViewManager;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereQuery {
 	/**
@@ -549,5 +554,29 @@ public class VsphereQuery {
 
 	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
 		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
+	}
+
+	protected static List<String> getVirtualNetworks(VirtualMachine vm) throws Exception {
+		List<String> networks = new ArrayList<String>();
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (back instanceof VirtualEthernetCardDistributedVirtualPortBackingInfo) {
+				VirtualEthernetCardDistributedVirtualPortBackingInfo dvpbi = (VirtualEthernetCardDistributedVirtualPortBackingInfo) back;
+				ManagedObjectReference ref = new ManagedObjectReference();
+				ref.setType("DistributedVirtualPortgroup");
+				ref.setVal(dvpbi.getPort().getPortgroupKey());
+				DistributedVirtualPortgroup dvpg = new DistributedVirtualPortgroup(VsphereManager.getServerConnection(), ref);
+				networks.add(dvpg.getName());
+			}
+		}
+
+		return networks;
 	}
 }
