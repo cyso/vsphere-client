@@ -52,6 +52,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
 		ConfigParameter poweroffmode = new ConfigParameter("t", "poweroff-vm", false, "Stop an existing VM (hard shutdown). Requires confirmation");
 		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
+		ConfigParameter modifymode = new ConfigParameter("m", "modify-vm", false, "Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.");
 
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
@@ -64,6 +65,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
+
+		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode. Note that this will apply for all specified devices.");
 
 		// User input
 		ConfigParameter fqdn = new ConfigParameter("fqdn", true, "FQDN", "Name of object to create");
@@ -92,7 +95,16 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modes.addOption(poweronmode);
 		modes.addOption(poweroffmode);
 		modes.addOption(shutdownmode);
+		modes.addOption(modifymode);
 		modes.setRequired(true);
+
+		OptionGroup modifymodes = new OptionGroup();
+		modifymodes.addOption(description);
+		modifymodes.addOption(network);
+		modifymodes.addOption(mac);
+		modifymodes.addOption(cpu);
+		modifymodes.addOption(memory);
+		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
 		root.addOptionGroup(modes);
@@ -128,12 +140,14 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		removevm.addOption(confirm);
 
 		ConfigMode poweronvm = new ConfigMode();
+		poweronvm.addRequiredOption(poweronmode);
 		poweronvm.addOptions(configopts);
 		poweronvm.addRequiredOption(fqdn);
 		poweronvm.addRequiredOption(dc);
 		poweronvm.addOption(folder);
 
 		ConfigMode poweroffvm = new ConfigMode();
+		poweroffvm.addRequiredOption(poweroffmode);
 		poweroffvm.addOptions(configopts);
 		poweroffvm.addRequiredOption(fqdn);
 		poweroffvm.addRequiredOption(dc);
@@ -141,11 +155,21 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		poweroffvm.addOption(confirm);
 
 		ConfigMode shutdownvm = new ConfigMode();
+		shutdownvm.addRequiredOption(shutdownmode);
 		shutdownvm.addOptions(configopts);
 		shutdownvm.addRequiredOption(fqdn);
 		shutdownvm.addRequiredOption(dc);
 		shutdownvm.addOption(folder);
 		shutdownvm.addOption(confirm);
+
+		ConfigMode modifyvm = new ConfigMode();
+		modifyvm.addRequiredOption(modifymode);
+		modifyvm.addOptions(configopts);
+		modifyvm.addRequiredOption(fqdn);
+		modifyvm.addRequiredOption(dc);
+		modifyvm.addRequiredOption(action);
+		modifyvm.addOptionGroup(modifymodes);
+		modifyvm.addOption(confirm);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);
@@ -156,6 +180,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigModes.addMode("POWERONVM", poweronvm);
 		ConfigModes.addMode("POWEROFFVM", poweroffvm);
 		ConfigModes.addMode("SHUTDOWNVM", shutdownvm);
+		ConfigModes.addMode("MODIFYVM", modifyvm);
 	}
 
 	public static void init() {
