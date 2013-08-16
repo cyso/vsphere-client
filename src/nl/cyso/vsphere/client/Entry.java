@@ -29,6 +29,7 @@ import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.mo.HostSystem;
@@ -185,8 +186,13 @@ public class Entry {
 
 						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+						String networks = StringUtils.join(VsphereQuery.getVirtualNetworks(vm), " | ");
+						String annotation = vm.getConfig().getAnnotation();
 
-						Formatter.printInfoLine(String.format("%-45s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// FQDN ESXNODE CPU/MEM
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// MAC@Network... Description
+						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}
 				}
 			} else {
