@@ -66,7 +66,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
 
-		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode. Note that this will apply for all specified devices.");
+		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, use modify in all other cases");
 
 		// User input
 		ConfigParameter fqdn = new ConfigParameter("fqdn", true, "FQDN", "Name of object to create");
@@ -101,7 +101,6 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		OptionGroup modifymodes = new OptionGroup();
 		modifymodes.addOption(description);
 		modifymodes.addOption(network);
-		modifymodes.addOption(mac);
 		modifymodes.addOption(cpu);
 		modifymodes.addOption(memory);
 		modifymodes.setRequired(true);
@@ -123,13 +122,6 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addOption(folder);
 		list.addOption(detailed);
 		list.addOption(depth);
-
-		ConfigMode addvm = new ConfigMode();
-		addvm.addRequiredOption(addmode);
-		addvm.addOptions(configopts);
-		addvm.addRequiredOptions(selectionopts1);
-		addvm.addOptions(selectionopts2);
-		addvm.addRequiredOptions(creationopts);
 
 		ConfigMode removevm = new ConfigMode();
 		removevm.addRequiredOption(removemode);
@@ -169,7 +161,16 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifyvm.addRequiredOption(dc);
 		modifyvm.addRequiredOption(action);
 		modifyvm.addOptionGroup(modifymodes);
+		modifyvm.addOption(folder);
+		modifyvm.addOption(mac);
 		modifyvm.addOption(confirm);
+
+		ConfigMode addvm = new ConfigMode();
+		addvm.addRequiredOption(addmode);
+		addvm.addOptions(configopts);
+		addvm.addRequiredOptions(selectionopts1);
+		addvm.addOptions(selectionopts2);
+		addvm.addRequiredOptions(creationopts);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);
