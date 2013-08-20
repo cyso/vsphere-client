@@ -21,7 +21,7 @@ Then you can simply call `ant dist` to create a *dist* folder with everything vs
 SYNOPSIS
 --------
 	
-	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -r | -t | -v | -y | -z [-c <FILE>]   [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
+	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -m | -r | -t | -v | -y | -z [-c <FILE>]    [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
 
 **HELP**
 
@@ -31,9 +31,13 @@ SYNOPSIS
 
 	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> --esxnode <E> [--folder <F>] --fqdn <FQDN> --mac <MAC> --memory <MEM> --network <NETWORK> --os <OS> [-p <PASSWORD>] [-s <SERVER>] --storage <S> --template <TEMPLATE> [-u <USER>]
 
+**MODIFYVM**
+
+	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --memory <MEM> | --network <NETWORK> --dc <VDC>  [--folder <F>] --fqdn <FQDN> -m --mac <MAC>   [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+
 **POWERONVM**
 
-	vsphere-client [-c <FILE>] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>] -y
 
 **VERSION**
 
@@ -45,11 +49,11 @@ SYNOPSIS
 
 **POWEROFFVM**
 
-	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] -t [-u <USER>]
 
 **SHUTDOWNVM**
 
-	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>] -z
 
 **REMOVEVM**
 
@@ -60,6 +64,10 @@ OPTIONS
 **-a** **--add-vm** *arg* 
 
 Add a new VM
+
+**--action** *ACTION* 
+
+What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, use modify in all other cases
 
 **-c** **--config** *FILE* 
 
@@ -120,6 +128,10 @@ MAC address of the object to create
 **--memory** *MEM* 
 
 Memory (in MB) of the object to create
+
+**-m** **--modify-vm** *arg* 
+
+Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.
 
 **--network** *NETWORK* 
 
