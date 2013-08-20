@@ -65,11 +65,6 @@
 		<map from="${basedir}" to="."/>
 	</pathconvert>
 
-	<pathconvert property="jython.class.path" pathsep=":">
-		<path refid="dist_libraries"/>
-		<map from="${basedir}" to="."/>
-	</pathconvert>
-
 	<pathconvert property="debian.class.path" pathsep=" ">
 		<path refid="dist_libraries"/>
 		<map from="${basedir}" to="/${debian.bin.dir}"/>
@@ -109,7 +104,6 @@
 		<delete dir="${dist.dir}" />
 		<delete file="${executable}" />
 		<delete file="${executable}-debug" />
-		<delete file="${executable}-jython" />
 		<delete>
 			<fileset dir="${basedir}" includes="${executable}-*.tar.bz2" />
 			<fileset dir="${basedir}/debian">
@@ -144,13 +138,6 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 		<chmod file="${executable}-debug" perm="a+x"/>
 	</target>
 
-	<!-- Create an easy to use Jython stub -->
-	<target name="jython-stub" depends="compile" description="Create an easy to use Jython stub file">
-		<echo file="${executable}-jython" append="false">#!/bin/sh
-java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.path=${project.class.path} "$$@"</echo>
-		<chmod file="${executable}-jython" perm="a+x"/>
-	</target>
-
 	<target name="git-revision" description="Store git revision in ${version}" if="git.present">
 		<exec executable="git" outputproperty="version" failifexecutionfails="false" errorproperty="">
 			<arg value="describe"/>
@@ -178,7 +165,7 @@ java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.p
 	</target>
 	
 	<!-- Create a clean dist directory -->
-	<target name="dist" depends="executable,jython-stub,man-page,readme" description="Create a clean dist directory">
+	<target name="dist" depends="executable,man-page,readme" description="Create a clean dist directory">
 		<delete dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}/${docs.dir}"/>
@@ -222,18 +209,8 @@ fi
 
 DIR="$( cd "$( dirname "$CMD" )" &amp;&amp; pwd )"
 java -jar $DIR/${executable}-${version}.jar ${root.package}.${entry.point} "$$@"</echo>
-		<echo file="${dist.dir}/${executable}-jython" append="false">#!/bin/sh
-if [ -L "$0" ]; then
-	CMD="$(readlink -f "$0")"
-else
-	CMD="$0"
-fi
-
-DIR="$( cd "$( dirname "$CMD" )" &amp;&amp; pwd )"
-java -jar jython.jar -Dpython.security.respectJavaAccessibility=false -Dpython.path=${jython.class.path} "$$@"</echo>
 		
 		<chmod file="${dist.dir}/${executable}" perm="a+x"/>
-		<chmod file="${dist.dir}/${executable}-jython" perm="a+x"/>
 	</target>
 
 	<target name="package-debian" depends="git-revision,dist" description="Prepare project for Debian packaging">
@@ -284,7 +261,6 @@ dist/${executable} ${debian.bin.dir}
 		<tar destfile="${executable}-${version}.tar.bz2" compression="bzip2">
 			<tarfileset dir="." preserveleadingslashes="false">
 				<include name="${executable}-${version}/**" />
-				<exclude name="${executable}-${version}/${executable}-jython" />
 			</tarfileset>
 		</tar>
 		<move tofile="${dist.dir}" file="${executable}-${version}" />
