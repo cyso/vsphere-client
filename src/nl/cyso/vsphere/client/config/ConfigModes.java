@@ -87,6 +87,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 
 		// Output options
 		ConfigParameter detailed = new ConfigParameter("detailed", false, null, "Output detailed information about the selected objects");
+		ConfigParameter properties = new ConfigParameter("properties", false, null, "Display all configuration parameters about the selected objects");
 		ConfigParameter depth = new ConfigParameter("depth", true, "DEPTH", "How deep to recurse into the Virtual Machine tree. Currently only used by --list vm");
 
 		OptionGroup modes = new OptionGroup();
@@ -125,6 +126,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addRequiredOption(dc);
 		list.addOption(folder);
 		list.addOption(detailed);
+		list.addOption(properties);
 		list.addOption(depth);
 
 		ConfigMode removevm = new ConfigMode();

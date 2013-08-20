@@ -215,10 +215,6 @@ public class VsphereClient {
 					Formatter.usageError("When modifying parameters, also specify --value.", "MODIFYVM", true);
 				}
 
-				for (OptionValue val : vm.getConfig().getExtraConfig()) {
-					Formatter.printInfoLine(String.format("%s - %s", val.getKey(), val.getValue()));
-				}
-
 				OptionValue parameter = new OptionValue();
 				parameter.setKey(Configuration.getString("parameter"));
 				parameter.setValue(Configuration.getString("value"));
