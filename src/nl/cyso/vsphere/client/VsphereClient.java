@@ -37,6 +37,7 @@ import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
 import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.TaskInProgress;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
@@ -209,6 +210,20 @@ public class VsphereClient {
 				} else if (Configuration.has("memory")) {
 					spec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
 				}
+			} else if (Configuration.has("parameter")) {
+				if (!Configuration.has("value")) {
+					Formatter.usageError("When modifying parameters, also specify --value.", "MODIFYVM", true);
+				}
+
+				for (OptionValue val : vm.getConfig().getExtraConfig()) {
+					Formatter.printInfoLine(String.format("%s - %s", val.getKey(), val.getValue()));
+				}
+
+				OptionValue parameter = new OptionValue();
+				parameter.setKey(Configuration.getString("parameter"));
+				parameter.setValue(Configuration.getString("value"));
+
+				spec.setExtraConfig(new OptionValue[] { parameter });
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
