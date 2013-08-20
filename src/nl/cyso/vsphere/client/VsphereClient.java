@@ -36,6 +36,7 @@ import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
 import com.vmware.vim25.InvalidState;
+import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.RuntimeFault;
@@ -96,8 +97,8 @@ public class VsphereClient {
 		if (task.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine(String.format("Success: Creating VM  - [ %s ] %n", Configuration.get("fqdn")));
 		} else {
-			String msg = "Failure: Creating [ " + Configuration.get("fqdn") + "] VM";
-			throw new RuntimeException(msg);
+			LocalizedMethodFault error = task.getTaskInfo().getError();
+			throw new RuntimeException("Failure: creating [ " + Configuration.get("fqdn") + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 		return VsphereQuery.getTaskInfoResult(task);
 	}
@@ -117,8 +118,8 @@ public class VsphereClient {
 		if (powerOnTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered on successfully");
 		} else {
-			String msg = "Failure: starting [ " + vm.getName() + "] VM";
-			throw new RuntimeException(msg);
+			LocalizedMethodFault error = powerOnTask.getTaskInfo().getError();
+			throw new RuntimeException("Failure: starting [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 	}
 
@@ -142,8 +143,8 @@ public class VsphereClient {
 		if (powerOffTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM powered off successfully");
 		} else {
-			String msg = "Failure: stopping [ " + vm.getName() + "] VM";
-			throw new RuntimeException(msg);
+			LocalizedMethodFault error = powerOffTask.getTaskInfo().getError();
+			throw new RuntimeException("Failure: stopping [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 	}
 
@@ -185,8 +186,8 @@ public class VsphereClient {
 		if (destroyTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM destroyed successfully");
 		} else {
-			String msg = "Failure: destroying [ " + vm.getName() + "] VM";
-			throw new RuntimeException(msg);
+			LocalizedMethodFault error = destroyTask.getTaskInfo().getError();
+			throw new RuntimeException("Failure: destroying [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 	}
 
@@ -287,7 +288,8 @@ public class VsphereClient {
 		if (modifyTask.waitForTask() == Task.SUCCESS) {
 			Formatter.printInfoLine("Success: VM modified successfully");
 		} else {
-			throw new RuntimeException("Failure: modifying [ " + vm.getName() + " ] VM: " + modifyTask.getTaskInfo().getError().getLocalizedMessage());
+			LocalizedMethodFault error = modifyTask.getTaskInfo().getError();
+			throw new RuntimeException("Failure: modifying [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 	}
 }
