@@ -184,6 +184,10 @@ public class Entry {
 					Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
 					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
 					for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
+						if (Configuration.getString("list-type").equals("VM") && Configuration.has("fqdn") && !object.getKey().contains(Configuration.getString("fqdn"))) {
+							continue;
+						}
+
 						if (!Configuration.has("detailed") || Configuration.getString("list-type").equals("FOLDER")) {
 							Formatter.printInfoLine(object.getKey());
 						}
