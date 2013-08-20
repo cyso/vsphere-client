@@ -49,6 +49,7 @@ import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceBackingInfo;
+import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
 import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
@@ -556,8 +557,8 @@ public class VsphereQuery {
 		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
 	}
 
-	protected static List<String> getVirtualNetworks(VirtualMachine vm) throws Exception {
-		List<String> networks = new ArrayList<String>();
+	protected static Map<String, VirtualEthernetCard> getVirtualMachineNetworks(VirtualMachine vm) {
+		Map<String, VirtualEthernetCard> networks = new HashMap<String, VirtualEthernetCard>();
 
 		VirtualMachineConfigInfo info = vm.getConfig();
 		VirtualDevice[] devs = info.getHardware().getDevice();
@@ -567,13 +568,13 @@ public class VsphereQuery {
 			if (back == null) {
 				continue;
 			}
-			if (back instanceof VirtualEthernetCardDistributedVirtualPortBackingInfo) {
+			if (virtualDevice instanceof VirtualEthernetCard && back instanceof VirtualEthernetCardDistributedVirtualPortBackingInfo) {
 				VirtualEthernetCardDistributedVirtualPortBackingInfo dvpbi = (VirtualEthernetCardDistributedVirtualPortBackingInfo) back;
 				ManagedObjectReference ref = new ManagedObjectReference();
 				ref.setType("DistributedVirtualPortgroup");
 				ref.setVal(dvpbi.getPort().getPortgroupKey());
 				DistributedVirtualPortgroup dvpg = new DistributedVirtualPortgroup(VsphereManager.getServerConnection(), ref);
-				networks.add(dvpg.getName());
+				networks.put(dvpg.getName(), (VirtualEthernetCard) virtualDevice);
 			}
 		}
 

@@ -186,7 +186,7 @@ public class Entry {
 
 						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
-						String networks = StringUtils.join(VsphereQuery.getVirtualNetworks(vm), " | ");
+						String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
 						String annotation = vm.getConfig().getAnnotation();
 
 						// FQDN ESXNODE CPU/MEM
