@@ -93,7 +93,7 @@ public class Entry {
 			if (mode.equals("ADDVM")) {
 				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
-			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM")) {
+			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("MODIFYVM")) {
 				Configuration.load(mode, args);
 
 				Formatter.printInfoLine("Selecting root Virtual Machine folder");
@@ -131,6 +131,8 @@ public class Entry {
 				} else if (mode.equals("SHUTDOWNVM")) {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.shutdownVirtualMachine(vm, Configuration.has("confirm"));
+				} else if (mode.equals("MODIFYVM")) {
+					VsphereClient.modifyVirtualMachine(vm, Configuration.has("confirm"));
 				}
 			} else if (mode.equals("LIST")) {
 				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
