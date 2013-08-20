@@ -33,7 +33,7 @@ SYNOPSIS
 
 **MODIFYVM**
 
-	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --memory <MEM> | --network <NETWORK> --dc <VDC>  [--folder <F>] --fqdn <FQDN> -m --mac <MAC>   [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --memory <MEM> | --network <NETWORK> | --parameter <PARAM> --dc <VDC>  [--folder <F>] --fqdn <FQDN> -m --mac <MAC>   [-p <PASSWORD>]  [-s <SERVER>] [-u <USER>] [--value <VALUE>]
 
 **POWERONVM**
 
@@ -45,7 +45,7 @@ SYNOPSIS
 
 **LIST**
 
-	vsphere-client [-c <FILE>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] -l <TYPE> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [-u <USER>]
 
 **POWEROFFVM**
 
@@ -119,7 +119,7 @@ Show help and examples
 
 **-l** **--list** *TYPE* 
 
-List vSphere objects (folder|vm)
+List vSphere objects (folder|vm). VM objects can be filtered using --fqdn
 
 **--mac** *MAC* 
 
@@ -141,9 +141,17 @@ Network of the object to create
 
 Operating System of the object to create
 
+**--parameter** *PARAM* 
+
+Virtual Machine parameter to modify
+
 **-p** **--password** *PASSWORD* 
 
 vSphere password
+
+**--properties** 
+
+Display all configuration parameters about the selected objects
 
 **-r** **--remove-vm** *arg* 
 
@@ -168,6 +176,10 @@ Stop an existing VM (hard shutdown). Requires confirmation
 **-u** **--username** *USER* 
 
 vSphere username
+
+**--value** *VALUE* 
+
+Virtual Machine parameter value
 
 **-v** **--version** *arg* 
 
