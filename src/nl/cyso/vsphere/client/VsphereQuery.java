@@ -48,17 +48,23 @@ import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VirtualDevice;
+import com.vmware.vim25.VirtualDeviceBackingInfo;
+import com.vmware.vim25.VirtualEthernetCard;
+import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
+import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
+import com.vmware.vim25.mo.DistributedVirtualPortgroup;
 import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.PropertyCollector;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.ViewManager;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereQuery {
 	/**
@@ -212,6 +218,26 @@ public class VsphereQuery {
 		EnvironmentBrowser envBrowser = new ComputeResource(VsphereManager.getServerConnection(), computeResMor).getEnvironmentBrowser();
 		HostSystem host = new HostSystem(VsphereManager.getServerConnection(), hostMor);
 		ConfigTarget configTarget = envBrowser.queryConfigTarget(host);
+		if (configTarget == null) {
+			throw new RuntimeException("No ConfigTarget found in ComputeResource");
+		}
+		return configTarget;
+	}
+
+	/**
+	 * This method returns the ConfigTarget for a VirtualMachine.
+	 * 
+	 * @param vmMor A MoRef to the VirtualMachine
+	 * @param hostMor A MoRef to the HostSystem
+	 * @return Instance of ConfigTarget for the supplied VirtualMachine
+	 * @throws Exception When no ConfigTarget can be found
+	 */
+	protected static ConfigTarget getConfigTargetForVirtualMachine(ManagedObjectReference vmMor) throws Exception {
+		EnvironmentBrowser envBrowser = new VirtualMachine(VsphereManager.getServerConnection(), vmMor).getEnvironmentBrowser();
+		if (envBrowser == null) {
+			return null;
+		}
+		ConfigTarget configTarget = envBrowser.queryConfigTarget(null);
 		if (configTarget == null) {
 			throw new RuntimeException("No ConfigTarget found in ComputeResource");
 		}
@@ -529,5 +555,29 @@ public class VsphereQuery {
 
 	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
 		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
+	}
+
+	protected static Map<String, VirtualEthernetCard> getVirtualMachineNetworks(VirtualMachine vm) {
+		Map<String, VirtualEthernetCard> networks = new HashMap<String, VirtualEthernetCard>();
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualEthernetCard && back instanceof VirtualEthernetCardDistributedVirtualPortBackingInfo) {
+				VirtualEthernetCardDistributedVirtualPortBackingInfo dvpbi = (VirtualEthernetCardDistributedVirtualPortBackingInfo) back;
+				ManagedObjectReference ref = new ManagedObjectReference();
+				ref.setType("DistributedVirtualPortgroup");
+				ref.setVal(dvpbi.getPort().getPortgroupKey());
+				DistributedVirtualPortgroup dvpg = new DistributedVirtualPortgroup(VsphereManager.getServerConnection(), ref);
+				networks.put(dvpg.getName(), (VirtualEthernetCard) virtualDevice);
+			}
+		}
+
+		return networks;
 	}
 }

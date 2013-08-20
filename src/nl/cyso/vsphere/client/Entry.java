@@ -29,6 +29,7 @@ import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.mo.HostSystem;
@@ -92,7 +93,7 @@ public class Entry {
 			if (mode.equals("ADDVM")) {
 				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
-			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM")) {
+			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("MODIFYVM")) {
 				Configuration.load(mode, args);
 
 				Formatter.printInfoLine("Selecting root Virtual Machine folder");
@@ -130,6 +131,8 @@ public class Entry {
 				} else if (mode.equals("SHUTDOWNVM")) {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.shutdownVirtualMachine(vm, Configuration.has("confirm"));
+				} else if (mode.equals("MODIFYVM")) {
+					VsphereClient.modifyVirtualMachine(vm, Configuration.has("confirm"));
 				}
 			} else if (mode.equals("LIST")) {
 				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
@@ -185,8 +188,13 @@ public class Entry {
 
 						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+						String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
+						String annotation = vm.getConfig().getAnnotation();
 
-						Formatter.printInfoLine(String.format("%-45s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// FQDN ESXNODE CPU/MEM
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// MAC@Network... Description
+						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}
 				}
 			} else {
