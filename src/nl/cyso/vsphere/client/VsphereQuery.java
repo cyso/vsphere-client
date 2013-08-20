@@ -48,17 +48,23 @@ import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VirtualDevice;
+import com.vmware.vim25.VirtualDeviceBackingInfo;
+import com.vmware.vim25.VirtualEthernetCard;
+import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
+import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
+import com.vmware.vim25.mo.DistributedVirtualPortgroup;
 import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.PropertyCollector;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.ViewManager;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereQuery {
 	/**
@@ -219,6 +225,26 @@ public class VsphereQuery {
 	}
 
 	/**
+	 * This method returns the ConfigTarget for a VirtualMachine.
+	 * 
+	 * @param vmMor A MoRef to the VirtualMachine
+	 * @param hostMor A MoRef to the HostSystem
+	 * @return Instance of ConfigTarget for the supplied VirtualMachine
+	 * @throws Exception When no ConfigTarget can be found
+	 */
+	protected static ConfigTarget getConfigTargetForVirtualMachine(ManagedObjectReference vmMor) throws Exception {
+		EnvironmentBrowser envBrowser = new VirtualMachine(VsphereManager.getServerConnection(), vmMor).getEnvironmentBrowser();
+		if (envBrowser == null) {
+			return null;
+		}
+		ConfigTarget configTarget = envBrowser.queryConfigTarget(null);
+		if (configTarget == null) {
+			throw new RuntimeException("No ConfigTarget found in ComputeResource");
+		}
+		return configTarget;
+	}
+
+	/**
 	 * The method returns the default devices from the HostSystem.
 	 * 
 	 * @param computeResMor A MoRef to the ComputeResource used by the HostSystem
@@ -363,7 +389,7 @@ public class VsphereQuery {
 		if (result == null || result.isEmpty()) {
 			return null;
 		} else {
-			return result.get(name);
+			return result.get("/" + name);
 		}
 	}
 
@@ -376,6 +402,10 @@ public class VsphereQuery {
 	}
 
 	private static Map<String, ManagedObjectReference> findVMFolderObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.findVMFolderObjects(filters, rootFolder, maxDepth, depth, type, null);
+	}
+
+	private static Map<String, ManagedObjectReference> findVMFolderObjects(List<String> filters, ManagedObjectReference rootFolder, int maxDepth, int depth, VMFolderObjectType type, String parentName) throws InvalidProperty, RuntimeFault, RemoteException {
 		Map<String, ManagedObjectReference> out = new HashMap<String, ManagedObjectReference>();
 		if (depth > maxDepth && maxDepth != -1) {
 			return out;
@@ -405,10 +435,11 @@ public class VsphereQuery {
 							if (!flag) {
 								continue;
 							}
-						} else if (type == VMFolderObjectType.Folder) {
-							out.put(name, ref);
 						}
-						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type));
+						if (type == VMFolderObjectType.Folder) {
+							out.put(String.format("%s/%s", (parentName == null) ? "" : parentName, name), ref);
+						}
+						out.putAll(VsphereQuery.findVMFolderObjects(filters, ref, maxDepth, depth + 1, type, String.format("%s/%s", (parentName == null) ? "" : parentName, name)));
 					} else if (ref.getType().equals("VirtualMachine")) {
 						if (filters != null && !filters.isEmpty()) {
 							boolean flag = false;
@@ -424,7 +455,7 @@ public class VsphereQuery {
 						}
 						// System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
 						if (type == VMFolderObjectType.VirtualMachine) {
-							out.put(name, ref);
+							out.put(String.format("%s/%s", (parentName == null) ? "" : parentName, name), ref);
 						}
 					}
 				}
@@ -443,9 +474,9 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name) throws RuntimeFault, RemoteException {
+	protected static ManagedObjectReference findVirtualMachineFolder(String datacenter, String name, int maxDepth) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
-		return VsphereQuery.findVirtualMachineFolder(dc, name);
+		return VsphereQuery.findVirtualMachineFolder(dc, name, maxDepth);
 	}
 
 	/**
@@ -458,7 +489,7 @@ public class VsphereQuery {
 	 * @throws RuntimeFault
 	 * @throws InvalidProperty
 	 */
-	protected static ManagedObjectReference findVirtualMachineFolder(ManagedObjectReference dc, String name) throws InvalidProperty, RuntimeFault, RemoteException {
+	protected static ManagedObjectReference findVirtualMachineFolder(ManagedObjectReference dc, String name, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
 		String[] nameParts = name.split("/");
 		int partCounter = 0;
 		ManagedObjectReference vmRoot = VsphereQuery.getVMRootFolder(dc);
@@ -468,13 +499,13 @@ public class VsphereQuery {
 				partCounter += 1;
 				continue;
 			}
-			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, 0, 0, VMFolderObjectType.Folder);
+			Map<String, ManagedObjectReference> found = VsphereQuery.findVMFolderObjects(Arrays.asList(part), vmRoot, maxDepth, 0, VMFolderObjectType.Folder);
 
 			if (found.size() != 1) {
-				continue;
+				break;
 			}
 
-			vmRoot = found.get(part);
+			vmRoot = found.values().iterator().next();
 			partCounter += 1;
 		}
 
@@ -492,9 +523,9 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(String datacenter, String path) throws RuntimeFault, RemoteException {
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(String datacenter, String path, int maxDepth) throws RuntimeFault, RemoteException {
 		ManagedObjectReference dc = VsphereQuery.getDatacenterReference(datacenter);
-		return VsphereQuery.findVirtualMachineFolders(dc, path);
+		return VsphereQuery.findVirtualMachineFolders(dc, path, maxDepth);
 	}
 
 	/**
@@ -504,14 +535,14 @@ public class VsphereQuery {
 	 * @throws RemoteException
 	 * @throws RuntimeFault
 	 */
-	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(ManagedObjectReference dc, String path) throws InvalidProperty, RuntimeFault, RemoteException {
-		ManagedObjectReference rootFolder = VsphereQuery.findVirtualMachineFolder(dc, path);
+	protected static Map<String, ManagedObjectReference> findVirtualMachineFolders(ManagedObjectReference dc, String path, int maxDepth) throws InvalidProperty, RuntimeFault, RemoteException {
+		ManagedObjectReference rootFolder = VsphereQuery.findVirtualMachineFolder(dc, path, 0);
 
 		if (rootFolder == null) {
 			return null;
 		}
 
-		return VsphereQuery.findVMFolderObjects(null, rootFolder, 0, 0, VMFolderObjectType.Folder);
+		return VsphereQuery.findVMFolderObjects(null, rootFolder, maxDepth, 0, VMFolderObjectType.Folder);
 	}
 
 	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
@@ -524,5 +555,29 @@ public class VsphereQuery {
 
 	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
 		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "DistributedVirtualPortgroup").get(networkName);
+	}
+
+	protected static Map<String, VirtualEthernetCard> getVirtualMachineNetworks(VirtualMachine vm) {
+		Map<String, VirtualEthernetCard> networks = new HashMap<String, VirtualEthernetCard>();
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualEthernetCard && back instanceof VirtualEthernetCardDistributedVirtualPortBackingInfo) {
+				VirtualEthernetCardDistributedVirtualPortBackingInfo dvpbi = (VirtualEthernetCardDistributedVirtualPortBackingInfo) back;
+				ManagedObjectReference ref = new ManagedObjectReference();
+				ref.setType("DistributedVirtualPortgroup");
+				ref.setVal(dvpbi.getPort().getPortgroupKey());
+				DistributedVirtualPortgroup dvpg = new DistributedVirtualPortgroup(VsphereManager.getServerConnection(), ref);
+				networks.put(dvpg.getName(), (VirtualEthernetCard) virtualDevice);
+			}
+		}
+
+		return networks;
 	}
 }

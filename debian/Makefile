@@ -1,10 +1,10 @@
 VERSION=$(git describe)
 
 changelog:
-	git dch --debian-branch=master --snapshot --auto
+	git dch --ignore-branch --snapshot --auto --git-author
 		 
 release:
-	git dch --debian-branch=master --release --auto -N $(VERSION)
+	git dch --ignore-branch --release --auto -N $(VERSION) --git-author
 
 package:
 	dpkg-buildpackage -A -us -uc

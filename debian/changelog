@@ -1,3 +1,26 @@
+vsphere-client (0.2) precise; urgency=low
+
+  * Make changelog generator ignore current branch
+  * Allow the --depth parameter to work for --list folder
+  * Permanently fix depth related issues
+  * List mode now shows full folder names
+  * Also store VMs with full path
+  * Slightly improve formatting for detailed mode
+  * Errors in createVirtualMachine now result in Exceptions
+  * Prepend a "/" when finding VMs
+  * Add ConfigMode for MODIFYVM
+  * Add getConfigTargetForVirtualMachine
+  * Add getVirtualNetworks
+  * Add networks and description to LIST vm --detailed
+  * Extend getVirtualMachineNetworks to also include the VirtualEthernetCard
+  * Add modifyVirtualMachine to VsphereClient
+  * Add MODIFYVM to Entry
+  * Move around ConfigModes to avoid setting things as required when they are not
+  * Make sure to use --git-author for changelog actions
+  * Bump version, regenerate README
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Tue, 20 Aug 2013 14:21:33 +0200
+
 vsphere-client (0.1.1) precise; urgency=low
 
   * Fix broken folder list mode

@@ -29,6 +29,7 @@ import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.mo.HostSystem;
@@ -92,14 +93,14 @@ public class Entry {
 			if (mode.equals("ADDVM")) {
 				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
-			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM")) {
+			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("MODIFYVM")) {
 				Configuration.load(mode, args);
 
 				Formatter.printInfoLine("Selecting root Virtual Machine folder");
 
 				ManagedObjectReference rootFolder;
 				if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
-					rootFolder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), Configuration.getString("folder"));
+					rootFolder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), Configuration.getString("folder"), 0);
 				} else {
 					rootFolder = VsphereQuery.getVMRootFolder(Configuration.getString("dc"));
 				}
@@ -130,6 +131,8 @@ public class Entry {
 				} else if (mode.equals("SHUTDOWNVM")) {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.shutdownVirtualMachine(vm, Configuration.has("confirm"));
+				} else if (mode.equals("MODIFYVM")) {
+					VsphereClient.modifyVirtualMachine(vm, Configuration.has("confirm"));
 				}
 			} else if (mode.equals("LIST")) {
 				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
@@ -154,19 +157,20 @@ public class Entry {
 
 				Formatter.printInfoLine("Walking tree");
 
+				int depth = 0;
+				if (Configuration.has("depth")) {
+					try {
+						depth = Integer.parseInt(Configuration.getString("depth"));
+					} catch (NumberFormatException nfe) {
+						Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
+					}
+				}
+
 				Map<String, ManagedObjectReference> objects;
 				if (Configuration.getString("list-type").equals("FOLDER")) {
-					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder);
+					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder, depth);
 				} else {
-					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder);
-					int depth = 0;
-					if (Configuration.has("depth")) {
-						try {
-							depth = Integer.parseInt(Configuration.getString("depth"));
-						} catch (NumberFormatException nfe) {
-							Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
-						}
-					}
+					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder, 0);
 
 					objects = VsphereQuery.findVirtualMachines(null, folder, depth);
 				}
@@ -184,14 +188,23 @@ public class Entry {
 
 						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+						String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
+						String annotation = vm.getConfig().getAnnotation();
 
-						Formatter.printInfoLine(String.format("%40s - %20s - CPU:%d/MEM:%d", vm.getName(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// FQDN ESXNODE CPU/MEM
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// MAC@Network... Description
+						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}
 				}
 			} else {
 				throw new UnsupportedOperationException("Mode not yet implemented");
 			}
 		} catch (RemoteException re) {
+			Formatter.printError("An error occured on vSphere: ");
+			Formatter.printErrorLine(re);
+			System.exit(-1);
+		} catch (RuntimeException re) {
 			Formatter.printError("Failed to execute action: ");
 			Formatter.printErrorLine(re);
 			System.exit(-1);
