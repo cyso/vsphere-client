@@ -46,7 +46,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm)");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm). VM objects can be filtered using --fqdn");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
@@ -78,12 +78,16 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
 
+		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
+		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
+
 		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
 		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, mac, cpu, memory, os, disk);
 
 		// Output options
 		ConfigParameter detailed = new ConfigParameter("detailed", false, null, "Output detailed information about the selected objects");
+		ConfigParameter properties = new ConfigParameter("properties", false, null, "Display all configuration parameters about the selected objects");
 		ConfigParameter depth = new ConfigParameter("depth", true, "DEPTH", "How deep to recurse into the Virtual Machine tree. Currently only used by --list vm");
 
 		OptionGroup modes = new OptionGroup();
@@ -103,6 +107,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(network);
 		modifymodes.addOption(cpu);
 		modifymodes.addOption(memory);
+		modifymodes.addOption(property);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
@@ -120,7 +125,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addOptions(configopts);
 		list.addRequiredOption(dc);
 		list.addOption(folder);
+		list.addOption(fqdn);
 		list.addOption(detailed);
+		list.addOption(properties);
 		list.addOption(depth);
 
 		ConfigMode removevm = new ConfigMode();
@@ -163,6 +170,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifyvm.addOptionGroup(modifymodes);
 		modifyvm.addOption(folder);
 		modifyvm.addOption(mac);
+		modifyvm.addOption(value);
 		modifyvm.addOption(confirm);
 
 		ConfigMode addvm = new ConfigMode();

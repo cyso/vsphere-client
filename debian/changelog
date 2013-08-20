@@ -1,3 +1,14 @@
+vsphere-client (0.2.5) precise; urgency=low
+
+  * Add ConfigMode for parameter modification
+  * Add parameter configuration to modifyVirtualMachine
+  * Allow for displaying of VM properties in -l vm
+  * Add Exception information to failure output
+  * Allow filtering output of -l vm using --fqdn
+  * Bump version, regenerate README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Tue, 20 Aug 2013 17:05:45 +0200
+
 vsphere-client (0.2) precise; urgency=low
 
   * Make changelog generator ignore current branch

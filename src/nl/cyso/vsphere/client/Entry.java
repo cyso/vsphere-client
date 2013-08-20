@@ -19,6 +19,8 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -32,6 +34,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.VirtualMachine;
 
@@ -181,20 +184,40 @@ public class Entry {
 					Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
 					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
 					for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
-						if (!Configuration.has("detailed") || Configuration.getString("list-type").equals("FOLDER")) {
-							Formatter.printInfoLine(object.getKey());
+						if (Configuration.getString("list-type").equals("VM") && Configuration.has("fqdn") && !object.getKey().contains(Configuration.getString("fqdn"))) {
 							continue;
 						}
 
-						VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
-						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
-						String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
-						String annotation = vm.getConfig().getAnnotation();
+						if (!Configuration.has("detailed") || Configuration.getString("list-type").equals("FOLDER")) {
+							Formatter.printInfoLine(object.getKey());
+						}
 
-						// FQDN ESXNODE CPU/MEM
-						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
-						// MAC@Network... Description
-						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+						if (Configuration.getString("list-type").equals("VM") && (Configuration.has("detailed") || Configuration.has("properties"))) {
+							VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
+							if (Configuration.has("detailed")) {
+								HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+								String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
+								String annotation = vm.getConfig().getAnnotation();
+
+								// FQDN ESXNODE CPU/MEM
+								Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+								// MAC@Network... Description
+								Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+							}
+							if (Configuration.has("properties")) {
+								Formatter.printInfoLine("- Virtual Machine properties");
+								OptionValue[] props = vm.getConfig().getExtraConfig();
+								Arrays.sort(props, new Comparator<OptionValue>() {
+									@Override
+									public int compare(OptionValue o1, OptionValue o2) {
+										return o1.getKey().compareTo(o2.getKey());
+									}
+								});
+								for (OptionValue val : props) {
+									Formatter.printInfoLine(String.format(" - [%s - %s]", val.getKey(), val.getValue()));
+								}
+							}
+						}
 					}
 				}
 			} else {
