@@ -19,8 +19,10 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -35,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
+import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.VirtualMachine;
 
@@ -97,7 +100,7 @@ public class Entry {
 				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
 			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("MODIFYVM")) {
-				Configuration.load(mode, args);
+				Configuration.load(mode, args, false);
 
 				Formatter.printInfoLine("Selecting root Virtual Machine folder");
 
@@ -196,7 +199,12 @@ public class Entry {
 							VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
 							if (Configuration.has("detailed")) {
 								HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
-								String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
+								Map<String, VirtualEthernetCard> cards = VsphereQuery.getVirtualMachineNetworks(vm);
+								List<String> card_info = new ArrayList<String>(cards.size());
+								for (java.util.Map.Entry<String, VirtualEthernetCard> card : cards.entrySet()) {
+									card_info.add(String.format("%s@%s", card.getValue().getMacAddress(), card.getKey()));
+								}
+								String networks = StringUtils.join(card_info, " | ");
 								String annotation = vm.getConfig().getAnnotation();
 
 								// FQDN ESXNODE CPU/MEM
