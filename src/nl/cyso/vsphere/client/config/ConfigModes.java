@@ -52,6 +52,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
 		ConfigParameter poweroffmode = new ConfigParameter("t", "poweroff-vm", false, "Stop an existing VM (hard shutdown). Requires confirmation");
 		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
+		ConfigParameter rebootmode = new ConfigParameter("x", "reboot-vm", false, "Reboot an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter modifymode = new ConfigParameter("m", "modify-vm", false, "Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.");
 
 		// Selectors
@@ -99,6 +100,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modes.addOption(poweronmode);
 		modes.addOption(poweroffmode);
 		modes.addOption(shutdownmode);
+		modes.addOption(rebootmode);
 		modes.addOption(modifymode);
 		modes.setRequired(true);
 
@@ -161,6 +163,14 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		shutdownvm.addOption(folder);
 		shutdownvm.addOption(confirm);
 
+		ConfigMode rebootvm = new ConfigMode();
+		rebootvm.addRequiredOption(rebootmode);
+		rebootvm.addOptions(configopts);
+		rebootvm.addRequiredOption(fqdn);
+		rebootvm.addRequiredOption(dc);
+		rebootvm.addOption(folder);
+		rebootvm.addOption(confirm);
+
 		ConfigMode modifyvm = new ConfigMode();
 		modifyvm.addRequiredOption(modifymode);
 		modifyvm.addOptions(configopts);
@@ -189,6 +199,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigModes.addMode("POWERONVM", poweronvm);
 		ConfigModes.addMode("POWEROFFVM", poweroffvm);
 		ConfigModes.addMode("SHUTDOWNVM", shutdownvm);
+		ConfigModes.addMode("REBOOTVM", rebootvm);
 		ConfigModes.addMode("MODIFYVM", modifyvm);
 	}
 

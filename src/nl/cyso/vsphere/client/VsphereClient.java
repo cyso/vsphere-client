@@ -167,6 +167,25 @@ public class VsphereClient {
 		}
 	}
 
+	public static void rebootVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
+		VsphereClient.rebootVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
+	}
+
+	public static void rebootVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState == VirtualMachinePowerState.poweredOn) {
+			if (!confirmed) {
+				Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
+				return;
+			}
+
+			vm.rebootGuest();
+			Formatter.printInfoLine("Success: VM reboot message sent successfully");
+		} else {
+			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		}
+	}
+
 	public static void deleteVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
 		VsphereClient.deleteVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
 	}
