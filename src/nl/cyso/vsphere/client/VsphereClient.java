@@ -19,11 +19,19 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
+import nl.cyso.vsphere.client.constants.ListModeType;
 import nl.nekoconeko.configmode.Formatter;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ConcurrentAccess;
 import com.vmware.vim25.ConfigTarget;
@@ -35,6 +43,7 @@ import com.vmware.vim25.FileFault;
 import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
+import com.vmware.vim25.InvalidProperty;
 import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
@@ -49,9 +58,11 @@ import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
+import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.ManagedEntity;
 import com.vmware.vim25.mo.ResourcePool;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
@@ -162,6 +173,25 @@ public class VsphereClient {
 
 			vm.shutdownGuest();
 			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
+		} else {
+			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		}
+	}
+
+	public static void rebootVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
+		VsphereClient.rebootVirtualMachine(new VirtualMachine(VsphereManager.getServerConnection(), vmmor), confirmed);
+	}
+
+	public static void rebootVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		if (powerState == VirtualMachinePowerState.poweredOn) {
+			if (!confirmed) {
+				Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
+				return;
+			}
+
+			vm.rebootGuest();
+			Formatter.printInfoLine("Success: VM reboot message sent successfully");
 		} else {
 			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
 		}
@@ -290,6 +320,139 @@ public class VsphereClient {
 		} else {
 			LocalizedMethodFault error = modifyTask.getTaskInfo().getError();
 			throw new RuntimeException("Failure: modifying [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
+		}
+	}
+
+	protected static void VMFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
+		Formatter.printInfoLine("Selecting root Virtual Machine folder");
+
+		String rootFolder;
+		if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
+			rootFolder = Configuration.getString("folder");
+		} else {
+			rootFolder = "/";
+		}
+
+		if (rootFolder == null) {
+			Formatter.printErrorLine("Could not select root Virtual Machine folder");
+			System.exit(-1);
+		}
+
+		Formatter.printInfoLine("Walking tree");
+
+		int depth = 0;
+		if (Configuration.has("depth")) {
+			try {
+				depth = Integer.parseInt(Configuration.getString("depth"));
+			} catch (NumberFormatException nfe) {
+				Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
+			}
+		}
+
+		Map<String, ManagedObjectReference> objects;
+		if (listType == ListModeType.FOLDER) {
+			objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder, depth);
+		} else {
+			ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder, 0);
+
+			objects = VsphereQuery.findVirtualMachines(null, folder, depth);
+		}
+
+		if (objects == null || objects.isEmpty()) {
+			Formatter.printInfoLine("No objects found!");
+		} else {
+			Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
+			Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
+			for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
+				if (listType == ListModeType.VM && Configuration.has("fqdn") && !object.getKey().contains(Configuration.getString("fqdn"))) {
+					continue;
+				}
+
+				if (!Configuration.has("detailed") || listType == ListModeType.FOLDER) {
+					Formatter.printInfoLine(object.getKey());
+				}
+
+				if (listType == ListModeType.VM && (Configuration.has("detailed") || Configuration.has("properties"))) {
+					VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
+					if (Configuration.has("detailed")) {
+						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+						Map<String, VirtualEthernetCard> cards = VsphereQuery.getVirtualMachineNetworks(vm);
+						List<String> card_info = new ArrayList<String>(cards.size());
+						for (java.util.Map.Entry<String, VirtualEthernetCard> card : cards.entrySet()) {
+							card_info.add(String.format("%s@%s", card.getValue().getMacAddress(), card.getKey()));
+						}
+						String networks = StringUtils.join(card_info, " | ");
+						String annotation = vm.getConfig().getAnnotation();
+
+						// FQDN ESXNODE CPU/MEM
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// MAC@Network... Description
+						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+					}
+					if (Configuration.has("properties")) {
+						Formatter.printInfoLine("- Virtual Machine properties");
+						OptionValue[] props = vm.getConfig().getExtraConfig();
+						Arrays.sort(props, new Comparator<OptionValue>() {
+							@Override
+							public int compare(OptionValue o1, OptionValue o2) {
+								return o1.getKey().compareTo(o2.getKey());
+							}
+						});
+						for (OptionValue val : props) {
+							Formatter.printInfoLine(String.format(" - [%s - %s]", val.getKey(), val.getValue()));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	protected static void ComputeFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
+		if (!Configuration.has("cluster") && (listType == ListModeType.ESXNODE || listType == ListModeType.NETWORK || listType == ListModeType.STORAGE)) {
+			Formatter.usageError("ESXNode, Network and Storage listing requires --cluster", "LIST", true);
+		}
+
+		Map<String, ClusterComputeResource> objects = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc"));
+		if (listType == ListModeType.CLUSTER) {
+			Formatter.printBorderedInfo("Objects found\n");
+
+			Map<String, ClusterComputeResource> sorted = new TreeMap<String, ClusterComputeResource>(objects);
+			for (Entry<String, ClusterComputeResource> object : sorted.entrySet()) {
+				Formatter.printInfoLine(object.getKey());
+			}
+			return;
+		}
+
+		ClusterComputeResource cluster = objects.get(Configuration.getString("cluster"));
+		if (cluster == null) {
+			Formatter.printErrorLine("Could not find cluster");
+			return;
+		}
+
+		ManagedEntity[] childs = new ManagedEntity[0];
+		switch (listType) {
+		case ESXNODE:
+			childs = cluster.getHosts();
+			break;
+		case NETWORK:
+			childs = cluster.getNetworks();
+			break;
+		case STORAGE:
+			childs = cluster.getDatastores();
+			break;
+		}
+
+		Arrays.sort(childs, new Comparator<ManagedEntity>() {
+			@Override
+			public int compare(ManagedEntity o1, ManagedEntity o2) {
+				return o1.getName().compareTo(o2.getName());
+			}
+		});
+
+		Formatter.printBorderedInfo(String.format("Objects found in cluster: %s\n", Configuration.getString("cluster")));
+
+		for (ManagedEntity child : childs) {
+			Formatter.printInfoLine(child.getName());
 		}
 	}
 }

@@ -46,12 +46,13 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm). VM objects can be filtered using --fqdn");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
 		ConfigParameter poweroffmode = new ConfigParameter("t", "poweroff-vm", false, "Stop an existing VM (hard shutdown). Requires confirmation");
 		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
+		ConfigParameter rebootmode = new ConfigParameter("x", "reboot-vm", false, "Reboot an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter modifymode = new ConfigParameter("m", "modify-vm", false, "Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.");
 
 		// Selectors
@@ -59,6 +60,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder. Specify as a Unix path, e.g.: /Customers/C");
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
 		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
+		ConfigParameter cluster = new ConfigParameter("cluster", true, "C", "Select this Cluster");
 
 		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode, storage);
 		List<ConfigParameter> selectionopts2 = Arrays.asList(folder);
@@ -99,6 +101,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modes.addOption(poweronmode);
 		modes.addOption(poweroffmode);
 		modes.addOption(shutdownmode);
+		modes.addOption(rebootmode);
 		modes.addOption(modifymode);
 		modes.setRequired(true);
 
@@ -126,6 +129,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addRequiredOption(dc);
 		list.addOption(folder);
 		list.addOption(fqdn);
+		list.addOption(cluster);
 		list.addOption(detailed);
 		list.addOption(properties);
 		list.addOption(depth);
@@ -161,6 +165,14 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		shutdownvm.addOption(folder);
 		shutdownvm.addOption(confirm);
 
+		ConfigMode rebootvm = new ConfigMode();
+		rebootvm.addRequiredOption(rebootmode);
+		rebootvm.addOptions(configopts);
+		rebootvm.addRequiredOption(fqdn);
+		rebootvm.addRequiredOption(dc);
+		rebootvm.addOption(folder);
+		rebootvm.addOption(confirm);
+
 		ConfigMode modifyvm = new ConfigMode();
 		modifyvm.addRequiredOption(modifymode);
 		modifyvm.addOptions(configopts);
@@ -189,6 +201,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigModes.addMode("POWERONVM", poweronvm);
 		ConfigModes.addMode("POWEROFFVM", poweroffvm);
 		ConfigModes.addMode("SHUTDOWNVM", shutdownvm);
+		ConfigModes.addMode("REBOOTVM", rebootvm);
 		ConfigModes.addMode("MODIFYVM", modifyvm);
 	}
 

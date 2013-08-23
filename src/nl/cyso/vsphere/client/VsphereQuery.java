@@ -55,12 +55,15 @@ import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
+import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
+import com.vmware.vim25.mo.Datacenter;
 import com.vmware.vim25.mo.DistributedVirtualPortgroup;
 import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.ManagedEntity;
 import com.vmware.vim25.mo.PropertyCollector;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.ViewManager;
@@ -420,7 +423,7 @@ public class VsphereQuery {
 		if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
 			ArrayOfManagedObjectReference refs = (ArrayOfManagedObjectReference) objects.get("childEntity");
 			if (refs.getManagedObjectReference() != null) {
-				for (ManagedObjectReference ref : ((ArrayOfManagedObjectReference) objects.get("childEntity")).getManagedObjectReference()) {
+				for (ManagedObjectReference ref : refs.getManagedObjectReference()) {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
 						// System.out.println(StringUtils.repeat("\t", depth) + name);
@@ -579,5 +582,17 @@ public class VsphereQuery {
 		}
 
 		return networks;
+	}
+
+	protected static Map<String, ClusterComputeResource> getClustersForDatacenter(String datacenter) throws RuntimeFault, RemoteException {
+		Datacenter dc = new Datacenter(VsphereManager.getServerConnection(), VsphereQuery.getDatacenterReference(datacenter));
+		Map<String, ClusterComputeResource> clusters = new HashMap<String, ClusterComputeResource>();
+
+		for (ManagedEntity child : dc.getHostFolder().getChildEntity()) {
+			if (child.getMOR().getType().equals("ClusterComputeResource")) {
+				clusters.put(child.getName(), new ClusterComputeResource(VsphereManager.getServerConnection(), child.getMOR()));
+			}
+		}
+		return clusters;
 	}
 }

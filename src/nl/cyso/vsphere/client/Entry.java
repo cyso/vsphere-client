@@ -19,24 +19,17 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.cyso.vsphere.client.config.Version;
+import nl.cyso.vsphere.client.constants.ListModeType;
 import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.OptionValue;
-import com.vmware.vim25.mo.HostSystem;
-import com.vmware.vim25.mo.VirtualMachine;
 
 public class Entry {
 
@@ -96,7 +89,7 @@ public class Entry {
 			if (mode.equals("ADDVM")) {
 				Configuration.load("ADDVM", args);
 				VsphereClient.createVirtualMachine();
-			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("MODIFYVM")) {
+			} else if (mode.equals("REMOVEVM") || mode.equals("POWERONVM") || mode.equals("POWEROFFVM") || mode.equals("SHUTDOWNVM") || mode.equals("REBOOTVM") || mode.equals("MODIFYVM")) {
 				Configuration.load(mode, args);
 
 				Formatter.printInfoLine("Selecting root Virtual Machine folder");
@@ -134,92 +127,37 @@ public class Entry {
 				} else if (mode.equals("SHUTDOWNVM")) {
 					Formatter.printInfoLine("Requesting shutdown of Virtual Machine: " + Configuration.getString("fqdn"));
 					VsphereClient.shutdownVirtualMachine(vm, Configuration.has("confirm"));
+				} else if (mode.equals("REBOOTVM")) {
+					Formatter.printInfoLine("Requesting reboot of Virtual Machine: " + Configuration.getString("fqdn"));
+					VsphereClient.rebootVirtualMachine(vm, Configuration.has("confirm"));
 				} else if (mode.equals("MODIFYVM")) {
 					VsphereClient.modifyVirtualMachine(vm, Configuration.has("confirm"));
 				}
 			} else if (mode.equals("LIST")) {
-				if (!Configuration.getString("list-type").equals("FOLDER") && !Configuration.getString("list-type").equals("VM")) {
+				Configuration.load("LIST", args);
+
+				ListModeType listType = null;
+				try {
+					listType = ListModeType.valueOf(Configuration.getString("list-type"));
+				} catch (IllegalArgumentException e) {
 					Formatter.usageError("Invalid List type selected", "LIST", true);
 				}
 
-				Configuration.load("LIST", args);
-
-				Formatter.printInfoLine("Selecting root Virtual Machine folder");
-
-				String rootFolder;
-				if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
-					rootFolder = Configuration.getString("folder");
-				} else {
-					rootFolder = "/";
+				switch (listType) {
+				case FOLDER:
+				case VM:
+					VsphereClient.VMFolderListMode(listType);
+					break;
+				case CLUSTER:
+				case ESXNODE:
+				case NETWORK:
+				case STORAGE:
+					VsphereClient.ComputeFolderListMode(listType);
+					break;
+				default:
+					throw new UnsupportedOperationException("List Mode not yet implemented");
 				}
 
-				if (rootFolder == null) {
-					Formatter.printErrorLine("Could not select root Virtual Machine folder");
-					System.exit(-1);
-				}
-
-				Formatter.printInfoLine("Walking tree");
-
-				int depth = 0;
-				if (Configuration.has("depth")) {
-					try {
-						depth = Integer.parseInt(Configuration.getString("depth"));
-					} catch (NumberFormatException nfe) {
-						Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
-					}
-				}
-
-				Map<String, ManagedObjectReference> objects;
-				if (Configuration.getString("list-type").equals("FOLDER")) {
-					objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder, depth);
-				} else {
-					ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder, 0);
-
-					objects = VsphereQuery.findVirtualMachines(null, folder, depth);
-				}
-
-				if (objects == null || objects.isEmpty()) {
-					Formatter.printInfoLine("No objects found!");
-				} else {
-					Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
-					Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
-					for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
-						if (Configuration.getString("list-type").equals("VM") && Configuration.has("fqdn") && !object.getKey().contains(Configuration.getString("fqdn"))) {
-							continue;
-						}
-
-						if (!Configuration.has("detailed") || Configuration.getString("list-type").equals("FOLDER")) {
-							Formatter.printInfoLine(object.getKey());
-						}
-
-						if (Configuration.getString("list-type").equals("VM") && (Configuration.has("detailed") || Configuration.has("properties"))) {
-							VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
-							if (Configuration.has("detailed")) {
-								HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
-								String networks = StringUtils.join(VsphereQuery.getVirtualMachineNetworks(vm).keySet(), " | ");
-								String annotation = vm.getConfig().getAnnotation();
-
-								// FQDN ESXNODE CPU/MEM
-								Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
-								// MAC@Network... Description
-								Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
-							}
-							if (Configuration.has("properties")) {
-								Formatter.printInfoLine("- Virtual Machine properties");
-								OptionValue[] props = vm.getConfig().getExtraConfig();
-								Arrays.sort(props, new Comparator<OptionValue>() {
-									@Override
-									public int compare(OptionValue o1, OptionValue o2) {
-										return o1.getKey().compareTo(o2.getKey());
-									}
-								});
-								for (OptionValue val : props) {
-									Formatter.printInfoLine(String.format(" - [%s - %s]", val.getKey(), val.getValue()));
-								}
-							}
-						}
-					}
-				}
 			} else {
 				throw new UnsupportedOperationException("Mode not yet implemented");
 			}

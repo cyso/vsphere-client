@@ -89,6 +89,8 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 					Configuration.set("mode", "POWEROFFVM");
 				} else if (opt.getLongOpt().equals("shutdown-vm")) {
 					Configuration.set("mode", "SHUTDOWNVM");
+				} else if (opt.getLongOpt().equals("reboot-vm")) {
+					Configuration.set("mode", "REBOOTVM");
 				} else if (opt.getLongOpt().equals("modify-vm")) {
 					Configuration.set("mode", "MODIFYVM");
 				} else if (opt.getLongOpt().equals("ip")) {
