@@ -1,3 +1,16 @@
+vsphere-client (0.3) precise; urgency=low
+
+  * Remove Jython executable generation
+  * Add output of mac addresses to -l vm --detailed
+  * Implement REBOOTVM
+  * Define List modes as an enum
+  * Add extra LIST modes
+  * Mode VM/Folder list logic to VsphereClient
+  * Implement extra LIST modes
+  * Bump version, regenerate README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Fri, 23 Aug 2013 12:36:28 +0200
+
 vsphere-client (0.2.5) precise; urgency=low
 
   * Add ConfigMode for parameter modification

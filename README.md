@@ -21,7 +21,7 @@ Then you can simply call `ant dist` to create a *dist* folder with everything vs
 SYNOPSIS
 --------
 	
-	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -m | -r | -t | -v | -y | -z [-c <FILE>]    [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
+	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -m | -r | -t | -v | -x | -y | -z [-c <FILE>]    [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
 
 **HELP**
 
@@ -43,9 +43,13 @@ SYNOPSIS
 
 	vsphere-client -v
 
+**REBOOTVM**
+
+	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>] -x
+
 **LIST**
 
-	vsphere-client [-c <FILE>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] [--cluster <C>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [-u <USER>]
 
 **POWEROFFVM**
 
@@ -72,6 +76,10 @@ What action to take for --modify-vm mode (add|modify|delete). add/delete is only
 **-c** **--config** *FILE* 
 
 Use a configuration file
+
+**--cluster** *C* 
+
+Select this Cluster
 
 **--confirm** 
 
@@ -119,7 +127,7 @@ Show help and examples
 
 **-l** **--list** *TYPE* 
 
-List vSphere objects (folder|vm). VM objects can be filtered using --fqdn
+List vSphere objects (folder|vm|cluster|esxnode|storage|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster
 
 **--mac** *MAC* 
 
@@ -184,6 +192,10 @@ Virtual Machine parameter value
 **-v** **--version** *arg* 
 
 Show version information
+
+**-x** **--reboot-vm** *arg* 
+
+Reboot an existing VM (soft shutdown). Requires confirmation
 
 **-y** **--poweron-vm** *arg* 
 
