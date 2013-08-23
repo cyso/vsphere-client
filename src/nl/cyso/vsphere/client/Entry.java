@@ -148,6 +148,12 @@ public class Entry {
 				case VM:
 					VsphereClient.VMFolderListMode(listType);
 					break;
+				case CLUSTER:
+				case ESXNODE:
+				case NETWORK:
+				case STORAGE:
+					VsphereClient.ComputeFolderListMode(listType);
+					break;
 				default:
 					throw new UnsupportedOperationException("List Mode not yet implemented");
 				}

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
@@ -57,9 +58,11 @@ import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
+import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
+import com.vmware.vim25.mo.ManagedEntity;
 import com.vmware.vim25.mo.ResourcePool;
 import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
@@ -404,4 +407,52 @@ public class VsphereClient {
 		}
 	}
 
+	protected static void ComputeFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
+		if (!Configuration.has("cluster") && (listType == ListModeType.ESXNODE || listType == ListModeType.NETWORK || listType == ListModeType.STORAGE)) {
+			Formatter.usageError("ESXNode, Network and Storage listing requires --cluster", "LIST", true);
+		}
+
+		Map<String, ClusterComputeResource> objects = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc"));
+		if (listType == ListModeType.CLUSTER) {
+			Formatter.printBorderedInfo("Objects found\n");
+
+			Map<String, ClusterComputeResource> sorted = new TreeMap<String, ClusterComputeResource>(objects);
+			for (Entry<String, ClusterComputeResource> object : sorted.entrySet()) {
+				Formatter.printInfoLine(object.getKey());
+			}
+			return;
+		}
+
+		ClusterComputeResource cluster = objects.get(Configuration.getString("cluster"));
+		if (cluster == null) {
+			Formatter.printErrorLine("Could not find cluster");
+			return;
+		}
+
+		ManagedEntity[] childs = new ManagedEntity[0];
+		switch (listType) {
+		case ESXNODE:
+			childs = cluster.getHosts();
+			break;
+		case NETWORK:
+			childs = cluster.getNetworks();
+			break;
+		case STORAGE:
+			childs = cluster.getDatastores();
+			break;
+		}
+
+		Arrays.sort(childs, new Comparator<ManagedEntity>() {
+			@Override
+			public int compare(ManagedEntity o1, ManagedEntity o2) {
+				return o1.getName().compareTo(o2.getName());
+			}
+		});
+
+		Formatter.printBorderedInfo(String.format("Objects found in cluster: %s\n", Configuration.getString("cluster")));
+
+		for (ManagedEntity child : childs) {
+			Formatter.printInfoLine(child.getName());
+		}
+	}
 }
