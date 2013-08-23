@@ -46,7 +46,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm). VM objects can be filtered using --fqdn");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
@@ -60,6 +60,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder. Specify as a Unix path, e.g.: /Customers/C");
 		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
 		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
+		ConfigParameter cluster = new ConfigParameter("cluster", true, "C", "Select this Cluster");
 
 		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode, storage);
 		List<ConfigParameter> selectionopts2 = Arrays.asList(folder);
@@ -128,6 +129,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addRequiredOption(dc);
 		list.addOption(folder);
 		list.addOption(fqdn);
+		list.addOption(cluster);
 		list.addOption(detailed);
 		list.addOption(properties);
 		list.addOption(depth);
