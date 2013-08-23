@@ -19,11 +19,18 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
+import nl.cyso.vsphere.client.constants.ListModeType;
 import nl.nekoconeko.configmode.Formatter;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.vmware.vim25.ConcurrentAccess;
 import com.vmware.vim25.ConfigTarget;
@@ -35,6 +42,7 @@ import com.vmware.vim25.FileFault;
 import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
+import com.vmware.vim25.InvalidProperty;
 import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
@@ -311,4 +319,89 @@ public class VsphereClient {
 			throw new RuntimeException("Failure: modifying [ " + vm.getName() + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
 	}
+
+	protected static void VMFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
+		Formatter.printInfoLine("Selecting root Virtual Machine folder");
+
+		String rootFolder;
+		if (Configuration.has("folder") && !Configuration.getString("folder").equals("")) {
+			rootFolder = Configuration.getString("folder");
+		} else {
+			rootFolder = "/";
+		}
+
+		if (rootFolder == null) {
+			Formatter.printErrorLine("Could not select root Virtual Machine folder");
+			System.exit(-1);
+		}
+
+		Formatter.printInfoLine("Walking tree");
+
+		int depth = 0;
+		if (Configuration.has("depth")) {
+			try {
+				depth = Integer.parseInt(Configuration.getString("depth"));
+			} catch (NumberFormatException nfe) {
+				Formatter.printErrorLine("Failed to parse --depth value, using 0 instead");
+			}
+		}
+
+		Map<String, ManagedObjectReference> objects;
+		if (listType == ListModeType.FOLDER) {
+			objects = VsphereQuery.findVirtualMachineFolders(Configuration.getString("dc"), rootFolder, depth);
+		} else {
+			ManagedObjectReference folder = VsphereQuery.findVirtualMachineFolder(Configuration.getString("dc"), rootFolder, 0);
+
+			objects = VsphereQuery.findVirtualMachines(null, folder, depth);
+		}
+
+		if (objects == null || objects.isEmpty()) {
+			Formatter.printInfoLine("No objects found!");
+		} else {
+			Map<String, ManagedObjectReference> sorted = new TreeMap<String, ManagedObjectReference>(objects);
+			Formatter.printBorderedInfo(String.format("Objects found in folder: %s\n", rootFolder));
+			for (java.util.Map.Entry<String, ManagedObjectReference> object : sorted.entrySet()) {
+				if (listType == ListModeType.VM && Configuration.has("fqdn") && !object.getKey().contains(Configuration.getString("fqdn"))) {
+					continue;
+				}
+
+				if (!Configuration.has("detailed") || listType == ListModeType.FOLDER) {
+					Formatter.printInfoLine(object.getKey());
+				}
+
+				if (listType == ListModeType.VM && (Configuration.has("detailed") || Configuration.has("properties"))) {
+					VirtualMachine vm = new VirtualMachine(VsphereManager.getServerConnection(), object.getValue());
+					if (Configuration.has("detailed")) {
+						HostSystem host = new HostSystem(VsphereManager.getServerConnection(), vm.getRuntime().getHost());
+						Map<String, VirtualEthernetCard> cards = VsphereQuery.getVirtualMachineNetworks(vm);
+						List<String> card_info = new ArrayList<String>(cards.size());
+						for (java.util.Map.Entry<String, VirtualEthernetCard> card : cards.entrySet()) {
+							card_info.add(String.format("%s@%s", card.getValue().getMacAddress(), card.getKey()));
+						}
+						String networks = StringUtils.join(card_info, " | ");
+						String annotation = vm.getConfig().getAnnotation();
+
+						// FQDN ESXNODE CPU/MEM
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						// MAC@Network... Description
+						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+					}
+					if (Configuration.has("properties")) {
+						Formatter.printInfoLine("- Virtual Machine properties");
+						OptionValue[] props = vm.getConfig().getExtraConfig();
+						Arrays.sort(props, new Comparator<OptionValue>() {
+							@Override
+							public int compare(OptionValue o1, OptionValue o2) {
+								return o1.getKey().compareTo(o2.getKey());
+							}
+						});
+						for (OptionValue val : props) {
+							Formatter.printInfoLine(String.format(" - [%s - %s]", val.getKey(), val.getValue()));
+						}
+					}
+				}
+			}
+		}
+	}
+
 }
