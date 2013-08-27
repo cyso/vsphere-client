@@ -588,9 +588,28 @@ public class VsphereQuery {
 		Datacenter dc = new Datacenter(VsphereManager.getServerConnection(), VsphereQuery.getDatacenterReference(datacenter));
 		Map<String, ClusterComputeResource> clusters = new HashMap<String, ClusterComputeResource>();
 
+		List<ManagedObjectReference> folders = new ArrayList<ManagedObjectReference>();
+
 		for (ManagedEntity child : dc.getHostFolder().getChildEntity()) {
 			if (child.getMOR().getType().equals("ClusterComputeResource")) {
 				clusters.put(child.getName(), new ClusterComputeResource(VsphereManager.getServerConnection(), child.getMOR()));
+			} else if (child.getMOR().getType().equals("Folder")) {
+				folders.add(child.getMOR());
+			}
+		}
+
+		for (ManagedObjectReference folder : folders) {
+			Map<String, Object> objects = VsphereQuery.getEntityProps(folder, new String[] { "name", "childEntity" });
+			if (objects.containsKey("childEntity") && objects.get("childEntity") != null) {
+				ArrayOfManagedObjectReference refs = (ArrayOfManagedObjectReference) objects.get("childEntity");
+				if (refs.getManagedObjectReference() != null) {
+					for (ManagedObjectReference ref : refs.getManagedObjectReference()) {
+						if (ref.getType().equals("ClusterComputeResource")) {
+							String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
+							clusters.put(name, new ClusterComputeResource(VsphereManager.getServerConnection(), ref));
+						}
+					}
+				}
 			}
 		}
 		return clusters;
