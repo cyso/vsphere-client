@@ -32,7 +32,6 @@
 	<property name="entry.point" value="Entry"/>
 	<property name="executable" value="vsphere-client"/>
 	<property name="debian.dir" value="debian"/>
-	<property name="debian.tmp.dir" value="${debian.dir}/tmp"/>
 	<property name="debian.bin.dir" value="usr/share/${executable}"/>
 	<property name="debian.lib.dir" value="${debian.bin.dir}/lib"/>
 
@@ -112,7 +111,6 @@
 				<include name="${executable}.manifest" />
 			</fileset>
 		</delete>
-		<delete dir="${debian.tmp.dir}" />
 		<delete dir="${debian.dir}/${executable}" />
 	</target>
 
@@ -219,26 +217,14 @@ dist/${executable} ${debian.bin.dir}
 </echo>
 		<echo file="debian/jars" append="false">${debian.pkg.jars}</echo>
 		<exec executable="sed" output="debian/${executable}.install" append="true">
-			<arg value="s#$$# ${debian.lib.dir}#" />
+			<arg value="s#^#${libs.dir}/#;s#$$# ${debian.lib.dir}#" />
 			<arg value="${debian.dir}/jars" />
 		</exec>
 
- 		<delete file="debian/jars" />
-		<copy file="${docs.dir}/${executable}.1" tofile="debian/${executable}.1" />
+		<delete file="debian/jars" />
 		<echo file="debian/${executable}.manpages" append="false">${docs.dir}/${executable}.1</echo>
 		<copy file="README.md" tofile="debian/${executable}.README.Debian" />
 
-		<mkdir dir="${debian.tmp.dir}" />
-
-		<copy todir="${debian.tmp.dir}">
-			<mapper type="flatten" />
-			<fileset dir="${dist.dir}">
-				<include name="${executable}" />
-				<include name="${executable}*.jar" />
-				<include name="lib/*" />
-			</fileset>
-		</copy>
-		<chmod file="${debian.tmp.dir}/${executable}" perm="a+x" />
 	</target>
 
 	<target name="bump-version" depends="git-revision" description="Bump the BUILD_VERSION version number">
