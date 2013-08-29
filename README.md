@@ -18,6 +18,8 @@ Building **vsphere-client** requires the following:
 
 Then you can simply call `ant dist` to create a *dist* folder with everything vsphere-client needs to run. You can also use `ant package-tar` to create a tarball
 
+Alternatively, if using Ubuntu or Debian, you can try using the vsphere-client PPA at: https://launchpad.net/~lordgaav/+archive/vsphere-client
+
 SYNOPSIS
 --------
 	
