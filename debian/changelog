@@ -1,3 +1,11 @@
+vsphere-client (0.3.2) precise; urgency=low
+
+  * Update ConfigMode to include upstream Ant building fix
+  * Make sure to run update-vendor before dist
+  * Bump version, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Thu, 29 Aug 2013 13:48:32 +0200
+
 vsphere-client (0.3.1) precise; urgency=low
 
   * Quick hack to allow subfolders in HostFolder
