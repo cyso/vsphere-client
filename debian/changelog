@@ -1,3 +1,19 @@
+vsphere-client (0.3.1) precise; urgency=low
+
+  * Quick hack to allow subfolders in HostFolder
+  * Update configmodes submodule to use GitHub URL
+  * Remove unnecessary package-debian steps
+  * Remove version number from distribution JAR file
+  * Add Git dependencies to control file
+  * Add PPA url to Readme
+  * Add source package and PPA upload target to Debian Makefile
+  * Change debian source format to 3.0 (native)
+  * Remove vsphere-client.manpages from Git
+  * Make sure the Ant clean target properly cleans up ALL the files
+  * Bump version, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Thu, 29 Aug 2013 11:18:03 +0200
+
 vsphere-client (0.3) precise; urgency=low
 
   * Remove Jython executable generation
