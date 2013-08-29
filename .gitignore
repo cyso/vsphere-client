@@ -15,9 +15,7 @@
 /lib/configmode-*.jar
 
 ## Debian build files
-/debian/*.1
-/debian/*.install
-/debian/*.manifest
+/debian/vsphere-client.*
 /debian/files
 /debian/tmp
 /debian/*.log
