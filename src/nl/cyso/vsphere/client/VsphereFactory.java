@@ -100,11 +100,11 @@ public class VsphereFactory {
 			diskSizeMB = 10 * 1024;
 		}
 
-		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, 10 * 1024);
+		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, 10 * 1024);
 		VirtualDeviceConfigSpec disk2Spec = null;
 
 		if (diskSizeMB > 10 * 1024) {
-			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, datastoreName, diskSizeMB - 10 * 1024);
+			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - 10 * 1024);
 		}
 
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
@@ -133,7 +133,7 @@ public class VsphereFactory {
 	 * @param diskSizeMB the disk size in mb
 	 * @return the virtual device config spec object
 	 */
-	protected static VirtualDeviceConfigSpec createVirtualDisk(int controllerKey, int unit, ManagedObjectReference datastoreRef, String volName, int diskSizeMB) {
+	protected static VirtualDeviceConfigSpec createVirtualDisk(int controllerKey, int unit, ManagedObjectReference datastoreRef, int diskSizeMB) {
 		VirtualDeviceConfigSpec diskSpec = new VirtualDeviceConfigSpec();
 
 		VirtualDiskFlatVer2BackingInfo diskfileBacking = new VirtualDiskFlatVer2BackingInfo();
