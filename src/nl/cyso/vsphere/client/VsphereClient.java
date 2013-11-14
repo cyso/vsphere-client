@@ -440,6 +440,10 @@ public class VsphereClient {
 		case STORAGE:
 			childs = cluster.getDatastores();
 			break;
+		default:
+			Formatter.printErrorLine("Invalid list mode selected for ComputeFolderListMode");
+			System.exit(-1);
+			break;
 		}
 
 		Arrays.sort(childs, new Comparator<ManagedEntity>() {
