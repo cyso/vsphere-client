@@ -29,6 +29,7 @@ import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.cyso.vsphere.client.constants.ListModeType;
+import nl.cyso.vsphere.client.constants.VMGuestType;
 import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.lang.StringUtils;
@@ -55,7 +56,6 @@ import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualMachineConfigSpec;
-import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
@@ -113,7 +113,7 @@ public class VsphereClient {
 		vmConfigSpec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
-		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.ubuntu64Guest.toString());
+		vmConfigSpec.setGuestId(VMGuestType.ubuntu64Guest.toString());
 
 		Task task = vmFolder.createVM_Task(vmConfigSpec, new ResourcePool(VsphereManager.getServerConnection(), resourcepoolmor), new HostSystem(VsphereManager.getServerConnection(), hostmor));
 		if (task.waitForTask() == Task.SUCCESS) {
