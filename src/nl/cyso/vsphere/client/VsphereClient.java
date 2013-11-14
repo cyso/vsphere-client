@@ -74,7 +74,18 @@ public class VsphereClient {
 			throw new RuntimeException("Datacenter " + Configuration.get("dc") + " not found.");
 		}
 
-		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
+		ManagedObjectReference hostmor = null;
+		if (Configuration.has("esxnode")) {
+			hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
+		} else if (Configuration.has("esxcluster")) {
+			try {
+				ClusterComputeResource cluster = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc")).get(Configuration.getString("esxcluster"));
+				hostmor = VsphereQuery.recommendHostSystem(cluster).getMOR();
+			} catch (NullPointerException ne) {
+
+			}
+		}
+
 		if (hostmor == null) {
 			throw new RuntimeException("Host " + Configuration.get("esxnode") + " not found");
 		}
