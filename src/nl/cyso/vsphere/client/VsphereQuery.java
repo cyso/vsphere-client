@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -653,13 +654,30 @@ public class VsphereQuery {
 		return hosts[0];
 	}
 
-	protected static Datastore recommendDatastore(ClusterComputeResource ccr) {
-		return VsphereQuery.recommendDatastore(ccr.getDatastores());
+	protected static Datastore recommendDatastore(ClusterComputeResource ccr, String filter) {
+		return VsphereQuery.recommendDatastore(ccr.getDatastores(), filter);
 	}
 
-	protected static Datastore recommendDatastore(Datastore[] datastores) {
+	protected static Datastore recommendDatastore(Datastore[] datastores, String filter) {
 		if (datastores == null || datastores.length == 0) {
 			throw new IllegalArgumentException("Datastores was null or empty");
+		}
+
+		if (filter != null) {
+			List<Datastore> lst = new ArrayList<Datastore>(Arrays.asList(datastores));
+			Iterator<Datastore> it = lst.iterator();
+			while (it.hasNext()) {
+				Datastore i = it.next();
+				if (!i.getName().contains(filter)) {
+					it.remove();
+				}
+			}
+			if (lst.size() == 0) {
+				throw new IllegalArgumentException("Datastores was empty after filtering");
+			} else if (lst.size() == 1) {
+				return lst.get(0);
+			}
+			datastores = lst.toArray(new Datastore[lst.size()]);
 		}
 
 		Arrays.sort(datastores, new Comparator<Datastore>() {

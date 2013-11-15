@@ -107,7 +107,12 @@ public class VsphereClient {
 			vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
 		}
 
-		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		VirtualMachineConfigSpec vmConfigSpec;
+		if (Configuration.has("storagecluster")) {
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), true, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		} else {
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), false, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		}
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
