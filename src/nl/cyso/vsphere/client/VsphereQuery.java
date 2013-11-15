@@ -660,9 +660,9 @@ public class VsphereQuery {
 				if (l1 == l2) {
 					return 0;
 				} else if (l1 > l2) {
-					return -1;
-				} else {
 					return 1;
+				} else {
+					return -1;
 				}
 			}
 		});
@@ -725,9 +725,9 @@ public class VsphereQuery {
 				if (l1 == l2) {
 					return 0;
 				} else if (l1 > l2) {
-					return -1;
-				} else {
 					return 1;
+				} else {
+					return -1;
 				}
 			}
 		});
