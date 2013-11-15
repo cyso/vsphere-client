@@ -712,11 +712,11 @@ public class VsphereQuery {
 		Arrays.sort(datastores, new Comparator<Datastore>() {
 			@Override
 			public int compare(Datastore o1, Datastore o2) {
-				int l1;
-				int l2;
+				long l1;
+				long l2;
 				try {
-					l1 = o1.getVms().length;
-					l2 = o2.getVms().length;
+					l1 = o1.getInfo().getFreeSpace();
+					l2 = o2.getInfo().getFreeSpace();
 				} catch (Exception e) {
 					Formatter.printStackTrace(e);
 					return 0;
