@@ -75,9 +75,9 @@ public class VsphereClient {
 		}
 
 		ManagedObjectReference hostmor = null;
-		if (Configuration.has("esxnode")) {
+		if (Configuration.has("esxnode") && !Configuration.getString("esxnode").equals("")) {
 			hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
-		} else if (Configuration.has("esxcluster")) {
+		} else if (Configuration.has("esxcluster") && !Configuration.getString("esxcluster").equals("")) {
 			try {
 				ClusterComputeResource cluster = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc")).get(Configuration.getString("esxcluster"));
 				hostmor = VsphereQuery.recommendHostSystem(cluster).getMOR();
@@ -108,7 +108,7 @@ public class VsphereClient {
 		}
 
 		VirtualMachineConfigSpec vmConfigSpec;
-		if (Configuration.has("storagecluster")) {
+		if (Configuration.has("storagecluster") && !Configuration.getString("storagecluster").equals("")) {
 			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), true, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
 		} else {
 			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), false, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
