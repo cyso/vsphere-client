@@ -683,7 +683,7 @@ public class VsphereQuery {
 		Iterator<Datastore> it = lst.iterator();
 		while (it.hasNext()) {
 			Datastore i = it.next();
-			if (!i.getSummary().getMaintenanceMode().equals(DatastoreSummaryMaintenanceModeState.normal)) {
+			if (!i.getSummary().getMaintenanceMode().equals(DatastoreSummaryMaintenanceModeState.normal.toString())) {
 				it.remove();
 			}
 		}
