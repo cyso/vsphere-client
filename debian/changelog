@@ -1,3 +1,12 @@
+vsphere-client (0.4.1) precise; urgency=medium
+
+  * Check for empty values in esxnode/storagecluster
+  * Cast enum value to String before checking for validity
+  * Invert storage cluster sorting yet again.
+  * Bump version, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Mon, 18 Nov 2013 15:03:56 +0100
+
 vsphere-client (0.4) precise; urgency=low
 
   * Update Classpath
