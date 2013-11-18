@@ -49,6 +49,8 @@ import com.vmware.vim25.VirtualMachineFileInfo;
 import com.vmware.vim25.VirtualSCSIController;
 import com.vmware.vim25.VirtualSCSISharing;
 import com.vmware.vim25.VirtualVmxnet3;
+import com.vmware.vim25.mo.ClusterComputeResource;
+import com.vmware.vim25.mo.Datastore;
 
 public class VsphereFactory {
 	private static int key = new Random().nextInt(10) + 10;
@@ -57,7 +59,7 @@ public class VsphereFactory {
 		return key++;
 	}
 
-	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
+	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, boolean suggestDatastore, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
@@ -69,7 +71,6 @@ public class VsphereFactory {
 
 		List<DistributedVirtualPortgroupInfo> portGroups = VsphereQuery.getVirtualPortgroupsForConfigTarget(configTarget, network);
 		List<DistributedVirtualSwitchInfo> switches = VsphereQuery.getVirtualSwitchesForConfigTarget(configTarget, "dvSwitch");
-		List<DatastoreSummary> datastores = VsphereQuery.getDatastoresForConfigTarget(configTarget, datastoreName);
 
 		if (portGroups.size() < 1) {
 			Formatter.printErrorLine("Failed to retrieve requested PortGroup");
@@ -81,15 +82,24 @@ public class VsphereFactory {
 			System.exit(-1);
 		}
 
-		if (datastores.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve DataStores");
-			System.exit(-1);
+		Datastore store = null;
+		if (suggestDatastore) {
+			ClusterComputeResource ccr = new ClusterComputeResource(VsphereManager.getServerConnection(), computeResMor);
+			store = VsphereQuery.recommendDatastore(ccr, datastoreName);
+		} else {
+			List<DatastoreSummary> datastores = VsphereQuery.getDatastoresForConfigTarget(configTarget, datastoreName);
+
+			if (datastores.size() < 1) {
+				Formatter.printErrorLine("Failed to retrieve DataStores");
+				System.exit(-1);
+			}
+			store = new Datastore(VsphereManager.getServerConnection(), datastores.get(0).getDatastore());
 		}
 
 		String networkName = portGroups.get(0).getPortgroupName();
 		String switchUuid = switches.get(0).getSwitchUuid();
-		ManagedObjectReference datastoreRef = datastores.get(0).getDatastore();
-		String datastoreVolume = VsphereQuery.getVolumeName(datastoreName);
+		ManagedObjectReference datastoreRef = store.getMOR();
+		String datastoreVolume = VsphereQuery.getVolumeName(store.getName());
 
 		VirtualMachineFileInfo vmfi = new VirtualMachineFileInfo();
 		vmfi.setVmPathName(String.format("%s", datastoreVolume));
@@ -100,11 +110,11 @@ public class VsphereFactory {
 			diskSizeMB = 10 * 1024;
 		}
 
-		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, datastoreName, 10 * 1024);
+		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, 10 * 1024);
 		VirtualDeviceConfigSpec disk2Spec = null;
 
 		if (diskSizeMB > 10 * 1024) {
-			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, datastoreName, diskSizeMB - 10 * 1024);
+			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - 10 * 1024);
 		}
 
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
@@ -133,7 +143,7 @@ public class VsphereFactory {
 	 * @param diskSizeMB the disk size in mb
 	 * @return the virtual device config spec object
 	 */
-	protected static VirtualDeviceConfigSpec createVirtualDisk(int controllerKey, int unit, ManagedObjectReference datastoreRef, String volName, int diskSizeMB) {
+	protected static VirtualDeviceConfigSpec createVirtualDisk(int controllerKey, int unit, ManagedObjectReference datastoreRef, int diskSizeMB) {
 		VirtualDeviceConfigSpec diskSpec = new VirtualDeviceConfigSpec();
 
 		VirtualDiskFlatVer2BackingInfo diskfileBacking = new VirtualDiskFlatVer2BackingInfo();

@@ -1,3 +1,22 @@
+vsphere-client (0.4) precise; urgency=low
+
+  * Update Classpath
+  * Add default case in ComputeFolderListMode mode selection
+  * Remove unused datastoreName variable
+  * Allow for usage of on/off tags in comments
+  * Add recommendHostSystem and recommendDatastore
+  * Add CLI options for ESX and Storage clusters
+  * Add Host node recommendation logic
+  * Change Guest Type to use internal Enum
+  * Update ConfigMode vendor
+  * Add Datastore recommendation logic
+  * Filter out HostSystems and Datastores in maintenance mode during Recommendation
+  * Reverse sort
+  * Base Datastore recommendation on free space
+  * Bump version, update README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Mon, 18 Nov 2013 12:11:41 +0100
+
 vsphere-client (0.3.2) precise; urgency=low
 
   * Update ConfigMode to include upstream Ant building fix

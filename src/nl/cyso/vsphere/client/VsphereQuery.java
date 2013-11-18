@@ -21,17 +21,21 @@ package nl.cyso.vsphere.client;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import nl.cyso.vsphere.client.constants.VMFolderObjectType;
+import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.lang.ArrayUtils;
 
 import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ConfigTarget;
 import com.vmware.vim25.DatastoreSummary;
+import com.vmware.vim25.DatastoreSummaryMaintenanceModeState;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
 import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DynamicProperty;
@@ -59,6 +63,7 @@ import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
 import com.vmware.vim25.mo.Datacenter;
+import com.vmware.vim25.mo.Datastore;
 import com.vmware.vim25.mo.DistributedVirtualPortgroup;
 import com.vmware.vim25.mo.EnvironmentBrowser;
 import com.vmware.vim25.mo.Folder;
@@ -613,5 +618,120 @@ public class VsphereQuery {
 			}
 		}
 		return clusters;
+	}
+
+	protected static HostSystem recommendHostSystem(ClusterComputeResource ccr) {
+		return VsphereQuery.recommendHostSystem(ccr.getHosts());
+	}
+
+	protected static HostSystem recommendHostSystem(HostSystem[] hosts) {
+		if (hosts == null || hosts.length == 0) {
+			throw new IllegalArgumentException("Hosts was null or empty");
+		}
+
+		List<HostSystem> lst = new ArrayList<HostSystem>(Arrays.asList(hosts));
+		Iterator<HostSystem> it = lst.iterator();
+		while (it.hasNext()) {
+			HostSystem i = it.next();
+			if (i.getRuntime().isInMaintenanceMode()) {
+				it.remove();
+			}
+		}
+		if (lst.size() == 0) {
+			throw new IllegalArgumentException("HostSystems was empty after filtering out hosts in maintenance mode");
+		} else if (lst.size() == 1) {
+			return lst.get(0);
+		}
+		hosts = lst.toArray(new HostSystem[lst.size()]);
+
+		Arrays.sort(hosts, new Comparator<HostSystem>() {
+			@Override
+			public int compare(HostSystem o1, HostSystem o2) {
+				int l1;
+				int l2;
+				try {
+					l1 = o1.getVms().length;
+					l2 = o2.getVms().length;
+				} catch (Exception e) {
+					Formatter.printStackTrace(e);
+					return 0;
+				}
+
+				if (l1 == l2) {
+					return 0;
+				} else if (l1 > l2) {
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		});
+
+		return hosts[0];
+	}
+
+	protected static Datastore recommendDatastore(ClusterComputeResource ccr, String filter) {
+		return VsphereQuery.recommendDatastore(ccr.getDatastores(), filter);
+	}
+
+	protected static Datastore recommendDatastore(Datastore[] datastores, String filter) {
+		if (datastores == null || datastores.length == 0) {
+			throw new IllegalArgumentException("Datastores was null or empty");
+		}
+
+		List<Datastore> lst = new ArrayList<Datastore>(Arrays.asList(datastores));
+		Iterator<Datastore> it = lst.iterator();
+		while (it.hasNext()) {
+			Datastore i = it.next();
+			if (!i.getSummary().getMaintenanceMode().equals(DatastoreSummaryMaintenanceModeState.normal)) {
+				it.remove();
+			}
+		}
+		if (lst.size() == 0) {
+			throw new IllegalArgumentException("Datastores was empty after filtering out hosts in maintenance mode");
+		} else if (lst.size() == 1) {
+			return lst.get(0);
+		}
+
+		if (filter != null) {
+			it = lst.iterator();
+			while (it.hasNext()) {
+				Datastore i = it.next();
+				if (!i.getName().contains(filter)) {
+					it.remove();
+				}
+			}
+			if (lst.size() == 0) {
+				throw new IllegalArgumentException("Datastores was empty after filtering");
+			} else if (lst.size() == 1) {
+				return lst.get(0);
+			}
+		}
+		datastores = lst.toArray(new Datastore[lst.size()]);
+
+		Arrays.sort(datastores, new Comparator<Datastore>() {
+			@Override
+			public int compare(Datastore o1, Datastore o2) {
+				long l1;
+				long l2;
+				try {
+					l1 = o1.getInfo().getFreeSpace();
+					l2 = o2.getInfo().getFreeSpace();
+				} catch (Exception e) {
+					Formatter.printStackTrace(e);
+					return 0;
+				}
+
+				if (l1 == l2) {
+					return 0;
+				} else if (l1 > l2) {
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		});
+
+		return datastores[0];
 	}
 }
