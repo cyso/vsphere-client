@@ -31,7 +31,7 @@ SYNOPSIS
 
 **ADDVM**
 
-	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> --esxnode <E> [--folder <F>] --fqdn <FQDN> --mac <MAC> --memory <MEM> --network <NETWORK> --os <OS> [-p <PASSWORD>] [-s <SERVER>] --storage <S> --template <TEMPLATE> [-u <USER>]
+	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> --esxcluster <EC> | --esxnode <E>  [--folder <F>] --fqdn <FQDN> --mac <MAC> --memory <MEM> --network <NETWORK> --os <OS> [-p <PASSWORD>] [-s <SERVER>] --storage <S> | --storagecluster <SC>  --template <TEMPLATE> [-u <USER>]
 
 **MODIFYVM**
 
@@ -111,9 +111,13 @@ Output detailed information about the selected objects
 
 Disk size (in MB) of the object to create
 
+**--esxcluster** *EC* 
+
+Select this ESX cluster. Mutually exclusive with --esxnode
+
 **--esxnode** *E* 
 
-Select this ESX node
+Select this ESX node. Mutually exclusive with --esxcluster
 
 **--folder** *F* 
 
@@ -173,7 +177,11 @@ vSphere server URI
 
 **--storage** *S* 
 
-Select this Storage Pool
+Select this Storage node. Mutually exclusive with --storagecluster
+
+**--storagecluster** *SC* 
+
+Select this Storage cluster. Mutually exclusive with --storage
 
 **--template** *TEMPLATE* 
 
