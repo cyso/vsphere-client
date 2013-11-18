@@ -29,6 +29,7 @@ import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.cyso.vsphere.client.constants.ListModeType;
+import nl.cyso.vsphere.client.constants.VMGuestType;
 import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.lang.StringUtils;
@@ -55,7 +56,6 @@ import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualMachineConfigSpec;
-import com.vmware.vim25.VirtualMachineGuestOsIdentifier;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
@@ -74,7 +74,18 @@ public class VsphereClient {
 			throw new RuntimeException("Datacenter " + Configuration.get("dc") + " not found.");
 		}
 
-		ManagedObjectReference hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
+		ManagedObjectReference hostmor = null;
+		if (Configuration.has("esxnode")) {
+			hostmor = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), dcmor);
+		} else if (Configuration.has("esxcluster")) {
+			try {
+				ClusterComputeResource cluster = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc")).get(Configuration.getString("esxcluster"));
+				hostmor = VsphereQuery.recommendHostSystem(cluster).getMOR();
+			} catch (NullPointerException ne) {
+
+			}
+		}
+
 		if (hostmor == null) {
 			throw new RuntimeException("Host " + Configuration.get("esxnode") + " not found");
 		}
@@ -96,13 +107,18 @@ public class VsphereClient {
 			vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
 		}
 
-		VirtualMachineConfigSpec vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		VirtualMachineConfigSpec vmConfigSpec;
+		if (Configuration.has("storagecluster")) {
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), true, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		} else {
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), false, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+		}
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
-		vmConfigSpec.setGuestId(VirtualMachineGuestOsIdentifier.ubuntu64Guest.toString());
+		vmConfigSpec.setGuestId(VMGuestType.ubuntu64Guest.toString());
 
 		Task task = vmFolder.createVM_Task(vmConfigSpec, new ResourcePool(VsphereManager.getServerConnection(), resourcepoolmor), new HostSystem(VsphereManager.getServerConnection(), hostmor));
 		if (task.waitForTask() == Task.SUCCESS) {

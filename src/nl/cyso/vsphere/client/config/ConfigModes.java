@@ -58,12 +58,21 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
 		ConfigParameter folder = new ConfigParameter("folder", true, "F", "Select this Folder. Specify as a Unix path, e.g.: /Customers/C");
-		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage Pool");
-		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node");
+		ConfigParameter storage = new ConfigParameter("storage", true, "S", "Select this Storage node. Mutually exclusive with --storagecluster");
+		ConfigParameter storagecluster = new ConfigParameter("storagecluster", true, "SC", "Select this Storage cluster. Mutually exclusive with --storage");
+		ConfigParameter esxnode = new ConfigParameter("esxnode", true, "E", "Select this ESX node. Mutually exclusive with --esxcluster");
+		ConfigParameter esxcluster = new ConfigParameter("esxcluster", true, "EC", "Select this ESX cluster. Mutually exclusive with --esxnode");
 		ConfigParameter cluster = new ConfigParameter("cluster", true, "C", "Select this Cluster");
 
-		List<ConfigParameter> selectionopts1 = Arrays.asList(dc, esxnode, storage);
-		List<ConfigParameter> selectionopts2 = Arrays.asList(folder);
+		OptionGroup storageopt = new OptionGroup();
+		storageopt.addOption(storage);
+		storageopt.addOption(storagecluster);
+		storageopt.setRequired(true);
+
+		OptionGroup nodeopt = new OptionGroup();
+		nodeopt.addOption(esxnode);
+		nodeopt.addOption(esxcluster);
+		nodeopt.setRequired(true);
 
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
@@ -188,8 +197,10 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigMode addvm = new ConfigMode();
 		addvm.addRequiredOption(addmode);
 		addvm.addOptions(configopts);
-		addvm.addRequiredOptions(selectionopts1);
-		addvm.addOptions(selectionopts2);
+		addvm.addOptionGroup(storageopt);
+		addvm.addOptionGroup(nodeopt);
+		addvm.addRequiredOption(dc);
+		addvm.addOption(folder);
 		addvm.addRequiredOptions(creationopts);
 
 		ConfigModes.addMode("ROOT", root);
