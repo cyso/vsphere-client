@@ -135,11 +135,7 @@ public class VsphereClient {
 	}
 
 	public static void powerOnVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState != VirtualMachinePowerState.poweredOff) {
-			Formatter.printInfoLine("Warning: VM was not in a powered off state, no action performed.");
-			return;
-		}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
 
 		Task powerOnTask = vm.powerOnVM_Task(null);
 		if (powerOnTask.waitForTask() == Task.SUCCESS) {
@@ -155,11 +151,7 @@ public class VsphereClient {
 	}
 
 	public static void powerOffVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState != VirtualMachinePowerState.poweredOn) {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
-			return;
-		}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
 		if (!confirmed) {
 			Formatter.printInfoLine(String.format("WhatIf: Would have powered off VM %s now, but confirmation was not given.", vm.getName()));
@@ -180,18 +172,15 @@ public class VsphereClient {
 	}
 
 	public static void shutdownVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
-			if (!confirmed) {
-				Formatter.printInfoLine(String.format("WhatIf: Would have shutdown VM %s now, but confirmation was not given.", vm.getName()));
-				return;
-			}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
-			vm.shutdownGuest();
-			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
-		} else {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have shutdown VM %s now, but confirmation was not given.", vm.getName()));
+			return;
 		}
+
+		vm.shutdownGuest();
+		Formatter.printInfoLine("Success: VM shutdown message sent successfully");
 	}
 
 	public static void rebootVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
@@ -199,18 +188,15 @@ public class VsphereClient {
 	}
 
 	public static void rebootVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
-			if (!confirmed) {
-				Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
-				return;
-			}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
-			vm.rebootGuest();
-			Formatter.printInfoLine("Success: VM reboot message sent successfully");
-		} else {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
+			return;
 		}
+
+		vm.rebootGuest();
+		Formatter.printInfoLine("Success: VM reboot message sent successfully");
 	}
 
 	public static void deleteVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
@@ -218,8 +204,7 @@ public class VsphereClient {
 	}
 
 	public static void deleteVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
+		if (VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn, false)) {
 			VsphereClient.powerOffVirtualMachine(vm, confirmed);
 		}
 
@@ -247,10 +232,8 @@ public class VsphereClient {
 			if (Configuration.has("description")) {
 				spec.setAnnotation(Configuration.getString("description"));
 			} else if (Configuration.has("cpu") || Configuration.has("memory")) {
-				VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-				if (powerState == VirtualMachinePowerState.poweredOn) {
-					throw new RuntimeException("Invalid power state: Machine is powered on");
-				}
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
+
 				if (Configuration.has("cpu")) {
 					spec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 					spec.setNumCoresPerSocket(1);
@@ -299,10 +282,7 @@ public class VsphereClient {
 				VirtualDeviceConfigSpec dev = VsphereFactory.getVirtualNicForPortGroup(port, type, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
 				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
 			} else if ((Configuration.has("odd") || Configuration.has("floppy")) && Configuration.has("storage")) {
-				VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-				if (powerState == VirtualMachinePowerState.poweredOn) {
-					throw new RuntimeException("Invalid power state: Machine is powered on");
-				}
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
 
 				VirtualDeviceConfigSpec dev = null;
 				if (Configuration.has("odd")) {

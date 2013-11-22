@@ -59,6 +59,7 @@ import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
+import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
@@ -736,5 +737,28 @@ public class VsphereQuery {
 		});
 
 		return datastores[0];
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState allowedState) {
+		return VsphereQuery.checkVirtualMachinePowerState(vm, new VirtualMachinePowerState[] { allowedState }, true);
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState allowedState, boolean throwError) {
+		return VsphereQuery.checkVirtualMachinePowerState(vm, new VirtualMachinePowerState[] { allowedState }, throwError);
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState[] allowedStates, boolean throwError) {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		boolean valid = false;
+		for (VirtualMachinePowerState virtualMachinePowerState : allowedStates) {
+			if (powerState.equals(virtualMachinePowerState)) {
+				valid = true;
+				break;
+			}
+		}
+		if (!valid && throwError) {
+			throw new RuntimeException(String.format("Invalid power state: Machine is %s", powerState.toString()));
+		}
+		return valid;
 	}
 }
