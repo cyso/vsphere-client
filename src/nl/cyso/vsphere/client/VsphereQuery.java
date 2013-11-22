@@ -359,6 +359,15 @@ public class VsphereQuery {
 		return VsphereQuery.getMOREFsInContainerByType(dc, "HostSystem").get(name);
 	}
 
+	protected static ManagedObjectReference getDatastoreReference(String name, String dc) throws RuntimeFault, RemoteException {
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
+		return VsphereQuery.getDatastoreReference(name, dcmor);
+	}
+
+	protected static ManagedObjectReference getDatastoreReference(String name, ManagedObjectReference dc) throws RuntimeFault, RemoteException {
+		return VsphereQuery.getMOREFsInContainerByType(dc, "Datastore").get(name);
+	}
+
 	protected static ManagedObjectReference getReferenceParent(ManagedObjectReference object) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(object, new String[] { "parent" }).get("parent");
 	}
