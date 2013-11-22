@@ -298,6 +298,19 @@ public class VsphereClient {
 				DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
 				VirtualDeviceConfigSpec dev = VsphereFactory.getVirtualNicForPortGroup(port, type, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
 				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
+			} else if ((Configuration.has("odd") || Configuration.has("floppy")) && Configuration.has("storage")) {
+				VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+				if (powerState == VirtualMachinePowerState.poweredOn) {
+					throw new RuntimeException("Invalid power state: Machine is powered on");
+				}
+
+				VirtualDeviceConfigSpec dev = null;
+				if (Configuration.has("odd")) {
+					dev = VsphereFactory.getCdromDrive(vm, Configuration.getString("storage"), Configuration.getString("dc"), Configuration.getString("odd"));
+				} else {
+					dev = VsphereFactory.getFloppyDiskDrive(vm, Configuration.getString("storage"), Configuration.getString("dc"), Configuration.getString("floppy"));
+				}
+				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}

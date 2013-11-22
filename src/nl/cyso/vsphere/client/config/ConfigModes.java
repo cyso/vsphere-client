@@ -89,6 +89,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
 
+		ConfigParameter odd = new ConfigParameter("odd", true, "ISO", "ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides");
+		ConfigParameter floppy = new ConfigParameter("floppy", true, "FLP", "FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides");
+
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
 
@@ -120,6 +123,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(cpu);
 		modifymodes.addOption(memory);
 		modifymodes.addOption(property);
+		modifymodes.addOption(odd);
+		modifymodes.addOption(floppy);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
@@ -190,6 +195,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifyvm.addRequiredOption(action);
 		modifyvm.addOptionGroup(modifymodes);
 		modifyvm.addOption(folder);
+		modifyvm.addOption(storage);
 		modifyvm.addOption(mac);
 		modifyvm.addOption(value);
 		modifyvm.addOption(confirm);
