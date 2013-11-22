@@ -19,7 +19,9 @@
 package nl.cyso.vsphere.client;
 
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import nl.cyso.vsphere.client.config.Configuration;
@@ -33,6 +35,9 @@ import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ParaVirtualSCSIController;
 import com.vmware.vim25.RuntimeFault;
+import com.vmware.vim25.VirtualCdrom;
+import com.vmware.vim25.VirtualCdromIsoBackingInfo;
+import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
@@ -43,7 +48,8 @@ import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
 import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualFloppy;
-import com.vmware.vim25.VirtualFloppyDeviceBackingInfo;
+import com.vmware.vim25.VirtualFloppyImageBackingInfo;
+import com.vmware.vim25.VirtualIDEController;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineFileInfo;
 import com.vmware.vim25.VirtualSCSIController;
@@ -51,6 +57,7 @@ import com.vmware.vim25.VirtualSCSISharing;
 import com.vmware.vim25.VirtualVmxnet3;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datastore;
+import com.vmware.vim25.mo.VirtualMachine;
 
 public class VsphereFactory {
 	private static int key = new Random().nextInt(10) + 10;
@@ -182,19 +189,85 @@ public class VsphereFactory {
 		return scsiCtrlSpec;
 	}
 
-	protected static VirtualDeviceConfigSpec getFloppyDiskDrive(String deviceName, VirtualDeviceConfigSpecOperation action) {
+	protected static VirtualDeviceConfigSpec getFloppyDiskDrive(VirtualMachine vm, String datastore, String dc, String filename) {
 		VirtualFloppy floppy = new VirtualFloppy();
 		floppy.setKey(VsphereFactory.getKey());
 
-		VirtualFloppyDeviceBackingInfo flpBacking = new VirtualFloppyDeviceBackingInfo();
-		flpBacking.setDeviceName(deviceName);
-		floppy.setBacking(flpBacking);
+		try {
+			VirtualFloppyImageBackingInfo flpBacking = new VirtualFloppyImageBackingInfo();
+
+			Datastore ds = new Datastore(VsphereManager.getServerConnection(), VsphereQuery.getDatastoreReference(datastore, dc));
+			flpBacking.setDatastore(ds.getMOR());
+			flpBacking.setFileName(String.format("%s %s", VsphereQuery.getVolumeName(ds.getName()), filename));
+
+			floppy.setBacking(flpBacking);
+		} catch (Exception e) {
+			Formatter.printStackTrace(e);
+			Formatter.printErrorLine("Failed to find datastore: " + datastore);
+			System.exit(-1);
+		}
 
 		VirtualDeviceConfigSpec floppySpec = new VirtualDeviceConfigSpec();
-		floppySpec.setOperation(action);
+		floppySpec.setOperation(VirtualDeviceConfigSpecOperation.add);
 		floppySpec.setDevice(floppy);
 
 		return floppySpec;
+	}
+
+	protected static VirtualDeviceConfigSpec getCdromDrive(VirtualMachine vm, String datastore, String dc, String filename) {
+		VirtualCdrom cdrom = new VirtualCdrom();
+		cdrom.setKey(VsphereFactory.getKey());
+
+		Map<Integer, Integer> devs = new HashMap<Integer, Integer>(4);
+		for (VirtualDevice device : vm.getConfig().getHardware().getDevice()) {
+			if (device instanceof VirtualIDEController) {
+				if (!devs.containsKey(device.getKey())) {
+					devs.put(device.getKey(), 0);
+				}
+			} else if (device instanceof VirtualCdrom) {
+				VirtualCdrom cd = (VirtualCdrom) device;
+				if (!devs.containsKey(cd.getControllerKey())) {
+					devs.put(cd.getControllerKey(), cd.getUnitNumber() + 1);
+				} else {
+					devs.put(cd.getControllerKey(), devs.get(cd.getControllerKey()) + (cd.getUnitNumber() + 1));
+				}
+			}
+		}
+
+		for (java.util.Map.Entry<Integer, Integer> dev : devs.entrySet()) {
+			if (dev.getValue() == 0 || dev.getValue() == 2) {
+				cdrom.setControllerKey(dev.getKey());
+				cdrom.setUnitNumber(0);
+			} else if (dev.getValue() == 1) {
+				cdrom.setControllerKey(dev.getKey());
+				cdrom.setUnitNumber(1);
+			}
+		}
+
+		if (cdrom.getUnitNumber() == null || cdrom.getControllerKey() == null) {
+			Formatter.printErrorLine("Could not find IDE controller, or all IDE controller slots are used.");
+			System.exit(-1);
+		}
+
+		try {
+			VirtualCdromIsoBackingInfo isoBacking = new VirtualCdromIsoBackingInfo();
+
+			Datastore ds = new Datastore(VsphereManager.getServerConnection(), VsphereQuery.getDatastoreReference(datastore, dc));
+			isoBacking.setDatastore(ds.getMOR());
+			isoBacking.setFileName(String.format("%s %s", VsphereQuery.getVolumeName(ds.getName()), filename));
+
+			cdrom.setBacking(isoBacking);
+		} catch (Exception e) {
+			Formatter.printStackTrace(e);
+			Formatter.printErrorLine("Failed to find datastore: " + datastore);
+			System.exit(-1);
+		}
+
+		VirtualDeviceConfigSpec cdromSpec = new VirtualDeviceConfigSpec();
+		cdromSpec.setOperation(VirtualDeviceConfigSpecOperation.add);
+		cdromSpec.setDevice(cdrom);
+
+		return cdromSpec;
 	}
 
 	protected static DistributedVirtualSwitchPortConnection getPortForNetworkAndSwitch(String networkName, String switchUuid) throws RuntimeFault, RemoteException {
