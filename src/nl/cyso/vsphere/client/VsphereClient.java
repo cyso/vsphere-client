@@ -51,10 +51,15 @@ import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.TaskInProgress;
+import com.vmware.vim25.VirtualCdrom;
+import com.vmware.vim25.VirtualCdromIsoBackingInfo;
+import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
+import com.vmware.vim25.VirtualFloppy;
+import com.vmware.vim25.VirtualFloppyImageBackingInfo;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
@@ -309,6 +314,35 @@ public class VsphereClient {
 				}
 				VirtualDeviceConfigSpec dev = new VirtualDeviceConfigSpec();
 				dev.setDevice(card);
+				dev.setOperation(VirtualDeviceConfigSpecOperation.remove);
+				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
+			} else if ((Configuration.has("odd") || Configuration.has("floppy")) && Configuration.has("storage")) {
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
+
+				VirtualDevice device = null;
+				if (Configuration.has("odd")) {
+					List<VirtualCdrom> cdroms = VsphereQuery.getVirtualMachineCdromDrives(vm);
+					for (VirtualCdrom virtualCdrom : cdroms) {
+						if (((VirtualCdromIsoBackingInfo) virtualCdrom.getBacking()).getFileName().contains(Configuration.getString("odd"))) {
+							device = virtualCdrom;
+						}
+					}
+				} else {
+					List<VirtualFloppy> floppies = VsphereQuery.getVirtualMachineFloppyDrives(vm);
+					for (VirtualFloppy virtualFloppy : floppies) {
+						if (((VirtualFloppyImageBackingInfo) virtualFloppy.getBacking()).getFileName().contains(Configuration.getString("floppy"))) {
+							device = virtualFloppy;
+						}
+					}
+				}
+
+				if (device == null) {
+					Formatter.printErrorLine("Could not find any devices with the given file");
+					System.exit(-1);
+				}
+
+				VirtualDeviceConfigSpec dev = new VirtualDeviceConfigSpec();
+				dev.setDevice(device);
 				dev.setOperation(VirtualDeviceConfigSpecOperation.remove);
 				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
 			} else {
