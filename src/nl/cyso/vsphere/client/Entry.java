@@ -168,6 +168,7 @@ public class Entry {
 		} catch (RuntimeException re) {
 			Formatter.printError("Failed to execute action: ");
 			Formatter.printErrorLine(re);
+			Formatter.printStackTrace(re);
 			System.exit(-1);
 		} catch (Exception e) {
 			Formatter.printErrorLine("An unexpected error occurred: ");
