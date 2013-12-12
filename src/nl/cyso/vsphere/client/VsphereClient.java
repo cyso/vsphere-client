@@ -132,7 +132,7 @@ public class VsphereClient {
 			LocalizedMethodFault error = task.getTaskInfo().getError();
 			throw new RuntimeException("Failure: creating [ " + Configuration.get("fqdn") + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
-		return VsphereQuery.getTaskInfoResult(task);
+		return (ManagedObjectReference) VsphereQuery.getTaskInfoResult(task);
 	}
 
 	public static void powerOnVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {

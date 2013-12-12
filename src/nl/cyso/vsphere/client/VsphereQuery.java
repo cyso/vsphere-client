@@ -561,12 +561,12 @@ public class VsphereQuery {
 		return VsphereQuery.findVMFolderObjects(null, rootFolder, maxDepth, 0, VMFolderObjectType.Folder);
 	}
 
-	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
+	protected static Object getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
 		return VsphereQuery.getTaskInfoResult(task.getMOR());
 	}
 
-	protected static ManagedObjectReference getTaskInfoResult(ManagedObjectReference taskMor) throws InvalidProperty, RuntimeFault, RemoteException {
-		return (ManagedObjectReference) VsphereQuery.getEntityProps(taskMor, new String[] { "info.result" }).get("info.result");
+	protected static Object getTaskInfoResult(ManagedObjectReference taskMor) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.getEntityProps(taskMor, new String[] { "info.result" }).get("info.result");
 	}
 
 	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
