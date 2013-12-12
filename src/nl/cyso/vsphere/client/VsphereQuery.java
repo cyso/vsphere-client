@@ -51,10 +51,14 @@ import com.vmware.vim25.RetrieveResult;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
+import com.vmware.vim25.VirtualCdrom;
+import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceBackingInfo;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
+import com.vmware.vim25.VirtualFloppy;
+import com.vmware.vim25.VirtualFloppyImageBackingInfo;
 import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
@@ -591,6 +595,44 @@ public class VsphereQuery {
 		}
 
 		return networks;
+	}
+
+	protected static List<VirtualFloppy> getVirtualMachineFloppyDrives(VirtualMachine vm) {
+		List<VirtualFloppy> floppies = new ArrayList<VirtualFloppy>(2);
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualFloppy && back instanceof VirtualFloppyImageBackingInfo) {
+				floppies.add((VirtualFloppy) virtualDevice);
+			}
+		}
+
+		return floppies;
+	}
+
+	protected static List<VirtualCdrom> getVirtualMachineCdromDrives(VirtualMachine vm) {
+		List<VirtualCdrom> cdroms = new ArrayList<VirtualCdrom>(4);
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualCdrom && back instanceof VirtualCdromIsoBackingInfo) {
+				cdroms.add((VirtualCdrom) virtualDevice);
+			}
+		}
+
+		return cdroms;
 	}
 
 	protected static Map<String, ClusterComputeResource> getClustersForDatacenter(String datacenter) throws RuntimeFault, RemoteException {
