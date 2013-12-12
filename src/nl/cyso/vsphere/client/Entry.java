@@ -143,6 +143,10 @@ public class Entry {
 					Formatter.usageError("Invalid List type selected", "LIST", true);
 				}
 
+				if (listType.equals(ListModeType.STORAGEFOLDER) && !Configuration.has("storage")) {
+					Formatter.usageError("Storage must be specified when using storagefolder list mode", "LIST", true);
+				}
+
 				switch (listType) {
 				case FOLDER:
 				case VM:
@@ -153,6 +157,14 @@ public class Entry {
 				case NETWORK:
 				case STORAGE:
 					VsphereClient.ComputeFolderListMode(listType);
+					break;
+				case STORAGEFOLDER:
+					ManagedObjectReference dsref = VsphereQuery.getDatastoreReference(Configuration.getString("storage"), Configuration.getString("dc"));
+					if (dsref == null) {
+						Formatter.printErrorLine("Could not find specified datastore");
+						System.exit(-1);
+					}
+					VsphereClient.DatastoreListMode(dsref);
 					break;
 				default:
 					throw new UnsupportedOperationException("List Mode not yet implemented");

@@ -21,6 +21,7 @@ package nl.cyso.vsphere.client;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.vmware.vim25.ArrayOfHostDatastoreBrowserSearchResults;
 import com.vmware.vim25.ConcurrentAccess;
 import com.vmware.vim25.ConfigTarget;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
@@ -41,6 +43,10 @@ import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.DuplicateName;
 import com.vmware.vim25.FileFault;
+import com.vmware.vim25.FileInfo;
+import com.vmware.vim25.FileQueryFlags;
+import com.vmware.vim25.HostDatastoreBrowserSearchResults;
+import com.vmware.vim25.HostDatastoreBrowserSearchSpec;
 import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
@@ -65,6 +71,7 @@ import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
+import com.vmware.vim25.mo.Datastore;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.ManagedEntity;
@@ -500,6 +507,42 @@ public class VsphereClient {
 
 		for (ManagedEntity child : childs) {
 			Formatter.printInfoLine(child.getName());
+		}
+	}
+
+	protected static void DatastoreListMode(ManagedObjectReference dsref) throws FileFault, InvalidDatastore, RuntimeFault, RemoteException, InterruptedException {
+		VsphereClient.DatastoreListMode(new Datastore(VsphereManager.getServerConnection(), dsref));
+	}
+
+	protected static void DatastoreListMode(Datastore ds) throws FileFault, InvalidDatastore, RuntimeFault, RemoteException, InterruptedException {
+		FileQueryFlags flags = new FileQueryFlags();
+		flags.setFileType(true);
+		flags.setFileOwner(true);
+		flags.setFileSize(true);
+
+		HostDatastoreBrowserSearchSpec spec = new HostDatastoreBrowserSearchSpec();
+		spec.setDetails(flags);
+
+		Task t = ds.getBrowser().searchDatastoreSubFolders_Task(VsphereQuery.getVolumeName(ds.getInfo().getName()), spec);
+		t.waitForTask();
+		Object res = VsphereQuery.getTaskInfoResult(t);
+
+		List<String> paths = new ArrayList<String>();
+
+		ArrayOfHostDatastoreBrowserSearchResults results = (ArrayOfHostDatastoreBrowserSearchResults) res;
+		for (HostDatastoreBrowserSearchResults r : results.getHostDatastoreBrowserSearchResults()) {
+			String root = r.getFolderPath().replace(VsphereQuery.getVolumeName(ds.getInfo().getName()) + " ", "").replace(VsphereQuery.getVolumeName(ds.getInfo().getName()), "");
+			for (FileInfo file : r.getFile()) {
+				paths.add(String.format("%s%s", root, file.getPath()));
+			}
+		}
+
+		Collections.sort(paths);
+
+		Formatter.printBorderedInfo(String.format("Objects found in datastore: %s\n", ds.getInfo().getName()));
+
+		for (String path : paths) {
+			Formatter.printInfoLine(path);
 		}
 	}
 }
