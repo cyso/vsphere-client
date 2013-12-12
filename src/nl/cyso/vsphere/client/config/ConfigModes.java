@@ -46,7 +46,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|storagefolder|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster. storagefolder requires --storage.");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
@@ -77,7 +77,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
 
-		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, use modify in all other cases");
+		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, --odd and --floppy, use modify in all other cases");
 
 		// User input
 		ConfigParameter fqdn = new ConfigParameter("fqdn", true, "FQDN", "Name of object to create");
@@ -88,6 +88,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
 		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
+
+		ConfigParameter odd = new ConfigParameter("odd", true, "ISO", "ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides");
+		ConfigParameter floppy = new ConfigParameter("floppy", true, "FLP", "FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides");
 
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
@@ -120,6 +123,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(cpu);
 		modifymodes.addOption(memory);
 		modifymodes.addOption(property);
+		modifymodes.addOption(odd);
+		modifymodes.addOption(floppy);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
@@ -136,6 +141,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addRequiredOption(listmode);
 		list.addOptions(configopts);
 		list.addRequiredOption(dc);
+		list.addOption(storage);
 		list.addOption(folder);
 		list.addOption(fqdn);
 		list.addOption(cluster);
@@ -190,6 +196,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifyvm.addRequiredOption(action);
 		modifyvm.addOptionGroup(modifymodes);
 		modifyvm.addOption(folder);
+		modifyvm.addOption(storage);
 		modifyvm.addOption(mac);
 		modifyvm.addOption(value);
 		modifyvm.addOption(confirm);

@@ -51,14 +51,19 @@ import com.vmware.vim25.RetrieveResult;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
+import com.vmware.vim25.VirtualCdrom;
+import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceBackingInfo;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
+import com.vmware.vim25.VirtualFloppy;
+import com.vmware.vim25.VirtualFloppyImageBackingInfo;
 import com.vmware.vim25.VirtualMachineConfigInfo;
 import com.vmware.vim25.VirtualMachineConfigOption;
 import com.vmware.vim25.VirtualMachineDatastoreInfo;
 import com.vmware.vim25.VirtualMachineNetworkInfo;
+import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.ComputeResource;
 import com.vmware.vim25.mo.ContainerView;
@@ -359,6 +364,15 @@ public class VsphereQuery {
 		return VsphereQuery.getMOREFsInContainerByType(dc, "HostSystem").get(name);
 	}
 
+	protected static ManagedObjectReference getDatastoreReference(String name, String dc) throws RuntimeFault, RemoteException {
+		ManagedObjectReference dcmor = VsphereQuery.getDatacenterReference(dc);
+		return VsphereQuery.getDatastoreReference(name, dcmor);
+	}
+
+	protected static ManagedObjectReference getDatastoreReference(String name, ManagedObjectReference dc) throws RuntimeFault, RemoteException {
+		return VsphereQuery.getMOREFsInContainerByType(dc, "Datastore").get(name);
+	}
+
 	protected static ManagedObjectReference getReferenceParent(ManagedObjectReference object) throws InvalidProperty, RuntimeFault, RemoteException {
 		return (ManagedObjectReference) VsphereQuery.getEntityProps(object, new String[] { "parent" }).get("parent");
 	}
@@ -547,12 +561,12 @@ public class VsphereQuery {
 		return VsphereQuery.findVMFolderObjects(null, rootFolder, maxDepth, 0, VMFolderObjectType.Folder);
 	}
 
-	protected static ManagedObjectReference getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
+	protected static Object getTaskInfoResult(Task task) throws InvalidProperty, RuntimeFault, RemoteException {
 		return VsphereQuery.getTaskInfoResult(task.getMOR());
 	}
 
-	protected static ManagedObjectReference getTaskInfoResult(ManagedObjectReference taskMor) throws InvalidProperty, RuntimeFault, RemoteException {
-		return (ManagedObjectReference) VsphereQuery.getEntityProps(taskMor, new String[] { "info.result" }).get("info.result");
+	protected static Object getTaskInfoResult(ManagedObjectReference taskMor) throws InvalidProperty, RuntimeFault, RemoteException {
+		return VsphereQuery.getEntityProps(taskMor, new String[] { "info.result" }).get("info.result");
 	}
 
 	protected static ManagedObjectReference getDistributedVirtualPortGroupForNetwork(String networkName) throws RuntimeFault, RemoteException {
@@ -581,6 +595,44 @@ public class VsphereQuery {
 		}
 
 		return networks;
+	}
+
+	protected static List<VirtualFloppy> getVirtualMachineFloppyDrives(VirtualMachine vm) {
+		List<VirtualFloppy> floppies = new ArrayList<VirtualFloppy>(2);
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualFloppy && back instanceof VirtualFloppyImageBackingInfo) {
+				floppies.add((VirtualFloppy) virtualDevice);
+			}
+		}
+
+		return floppies;
+	}
+
+	protected static List<VirtualCdrom> getVirtualMachineCdromDrives(VirtualMachine vm) {
+		List<VirtualCdrom> cdroms = new ArrayList<VirtualCdrom>(4);
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualCdrom && back instanceof VirtualCdromIsoBackingInfo) {
+				cdroms.add((VirtualCdrom) virtualDevice);
+			}
+		}
+
+		return cdroms;
 	}
 
 	protected static Map<String, ClusterComputeResource> getClustersForDatacenter(String datacenter) throws RuntimeFault, RemoteException {
@@ -727,5 +779,28 @@ public class VsphereQuery {
 		});
 
 		return datastores[0];
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState allowedState) {
+		return VsphereQuery.checkVirtualMachinePowerState(vm, new VirtualMachinePowerState[] { allowedState }, true);
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState allowedState, boolean throwError) {
+		return VsphereQuery.checkVirtualMachinePowerState(vm, new VirtualMachinePowerState[] { allowedState }, throwError);
+	}
+
+	protected static boolean checkVirtualMachinePowerState(VirtualMachine vm, VirtualMachinePowerState[] allowedStates, boolean throwError) {
+		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
+		boolean valid = false;
+		for (VirtualMachinePowerState virtualMachinePowerState : allowedStates) {
+			if (powerState.equals(virtualMachinePowerState)) {
+				valid = true;
+				break;
+			}
+		}
+		if (!valid && throwError) {
+			throw new RuntimeException(String.format("Invalid power state: Machine is %s", powerState.toString()));
+		}
+		return valid;
 	}
 }
