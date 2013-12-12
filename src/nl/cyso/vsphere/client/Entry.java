@@ -144,7 +144,7 @@ public class Entry {
 				}
 
 				if (listType.equals(ListModeType.STORAGEFOLDER) && !Configuration.has("storage")) {
-					Formatter.usageError("Storage must be specified when using storagefolder list mode", "LIST", true);
+					Formatter.usageError("--storage must be specified when using storagefolder list mode", "LIST", true);
 				}
 
 				switch (listType) {

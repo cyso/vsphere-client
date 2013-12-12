@@ -46,7 +46,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter helpmode = new ConfigParameter("h", "help", true, "COMMAND", "Show help and examples");
 		helpmode.setOptionalArg(true);
 		ConfigParameter versionmode = new ConfigParameter("v", "version", false, "Show version information");
-		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|storagefolder|network). VM objects can be filtered using --fqdn. esxnode, storage, storagefolder and network require a --cluster");
+		ConfigParameter listmode = new ConfigParameter("l", "list", true, "TYPE", "List vSphere objects (folder|vm|cluster|esxnode|storage|storagefolder|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster. storagefolder requires --storage.");
 		ConfigParameter addmode = new ConfigParameter("a", "add-vm", false, "Add a new VM");
 		ConfigParameter removemode = new ConfigParameter("r", "remove-vm", false, "Remove a VM. Requires confirmation");
 		ConfigParameter poweronmode = new ConfigParameter("y", "poweron-vm", false, "Start an existing VM");
@@ -77,7 +77,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
 
-		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, use modify in all other cases");
+		ConfigParameter action = new ConfigParameter("action", true, "ACTION", "What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, --odd and --floppy, use modify in all other cases");
 
 		// User input
 		ConfigParameter fqdn = new ConfigParameter("fqdn", true, "FQDN", "Name of object to create");
