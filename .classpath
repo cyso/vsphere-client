@@ -4,6 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/vijava5120121125.jar" sourcepath="lib/vijava5120121125-sources.jar"/>
 	<classpathentry kind="lib" path="lib/dom4j-1.6.1.jar"/>
-	<classpathentry kind="lib" path="lib/configmode-9648cf2-complete.jar" sourcepath="lib/configmode-9648cf2-complete-sources.jar"/>
+	<classpathentry kind="lib" path="lib/configmode-1913349-complete.jar" sourcepath="lib/configmode-1913349-complete-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

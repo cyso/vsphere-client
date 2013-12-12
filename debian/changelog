@@ -1,3 +1,22 @@
+vsphere-client (0.5) precise; urgency=low
+
+  * Remove old debug statements
+  * Print stack trace on RuntimeException
+  * Update ConfigModes
+  * Added getDatastoreReference
+  * Add getCdromDrive and rework getFloppyDiskDrive
+  * Add ConfigModes and Entry point
+  * Refactor power state logic to checkVirtualMachinePowerState
+  * Add getVirtualMachineFloppyDrives and getVirtualMachineCdromDrives
+  * getFloppyDiskDrive properly sets its unit number, and errors if all slots are full
+  * Add logic to remove odd and floppy drives
+  * Refactor getTaskInfoResult to return Object instead of ManagedObjectReference
+  * Add DatastoreListMode and add it to Entry
+  * Clarify help
+  * Bump version, update README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Thu, 12 Dec 2013 16:35:06 +0100
+
 vsphere-client (0.4.1) precise; urgency=medium
 
   * Check for empty values in esxnode/storagecluster

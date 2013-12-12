@@ -21,6 +21,7 @@ package nl.cyso.vsphere.client;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.vmware.vim25.ArrayOfHostDatastoreBrowserSearchResults;
 import com.vmware.vim25.ConcurrentAccess;
 import com.vmware.vim25.ConfigTarget;
 import com.vmware.vim25.DistributedVirtualPortgroupInfo;
@@ -41,6 +43,10 @@ import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.DuplicateName;
 import com.vmware.vim25.FileFault;
+import com.vmware.vim25.FileInfo;
+import com.vmware.vim25.FileQueryFlags;
+import com.vmware.vim25.HostDatastoreBrowserSearchResults;
+import com.vmware.vim25.HostDatastoreBrowserSearchSpec;
 import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
@@ -51,15 +57,21 @@ import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.TaskInProgress;
+import com.vmware.vim25.VirtualCdrom;
+import com.vmware.vim25.VirtualCdromIsoBackingInfo;
+import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
+import com.vmware.vim25.VirtualFloppy;
+import com.vmware.vim25.VirtualFloppyImageBackingInfo;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
+import com.vmware.vim25.mo.Datastore;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.HostSystem;
 import com.vmware.vim25.mo.ManagedEntity;
@@ -127,7 +139,7 @@ public class VsphereClient {
 			LocalizedMethodFault error = task.getTaskInfo().getError();
 			throw new RuntimeException("Failure: creating [ " + Configuration.get("fqdn") + " ] VM: " + error == null ? "" : error.getLocalizedMessage());
 		}
-		return VsphereQuery.getTaskInfoResult(task);
+		return (ManagedObjectReference) VsphereQuery.getTaskInfoResult(task);
 	}
 
 	public static void powerOnVirtualMachine(ManagedObjectReference vmmor) throws RemoteException, Exception {
@@ -135,11 +147,7 @@ public class VsphereClient {
 	}
 
 	public static void powerOnVirtualMachine(VirtualMachine vm) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState != VirtualMachinePowerState.poweredOff) {
-			Formatter.printInfoLine("Warning: VM was not in a powered off state, no action performed.");
-			return;
-		}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
 
 		Task powerOnTask = vm.powerOnVM_Task(null);
 		if (powerOnTask.waitForTask() == Task.SUCCESS) {
@@ -155,11 +163,7 @@ public class VsphereClient {
 	}
 
 	public static void powerOffVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState != VirtualMachinePowerState.poweredOn) {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
-			return;
-		}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
 		if (!confirmed) {
 			Formatter.printInfoLine(String.format("WhatIf: Would have powered off VM %s now, but confirmation was not given.", vm.getName()));
@@ -180,18 +184,15 @@ public class VsphereClient {
 	}
 
 	public static void shutdownVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
-			if (!confirmed) {
-				Formatter.printInfoLine(String.format("WhatIf: Would have shutdown VM %s now, but confirmation was not given.", vm.getName()));
-				return;
-			}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
-			vm.shutdownGuest();
-			Formatter.printInfoLine("Success: VM shutdown message sent successfully");
-		} else {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have shutdown VM %s now, but confirmation was not given.", vm.getName()));
+			return;
 		}
+
+		vm.shutdownGuest();
+		Formatter.printInfoLine("Success: VM shutdown message sent successfully");
 	}
 
 	public static void rebootVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
@@ -199,18 +200,15 @@ public class VsphereClient {
 	}
 
 	public static void rebootVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
-			if (!confirmed) {
-				Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
-				return;
-			}
+		VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn);
 
-			vm.rebootGuest();
-			Formatter.printInfoLine("Success: VM reboot message sent successfully");
-		} else {
-			Formatter.printInfoLine("Warning: VM was not in a powered on state, no action performed.");
+		if (!confirmed) {
+			Formatter.printInfoLine(String.format("WhatIf: Would have reboot VM %s now, but confirmation was not given.", vm.getName()));
+			return;
 		}
+
+		vm.rebootGuest();
+		Formatter.printInfoLine("Success: VM reboot message sent successfully");
 	}
 
 	public static void deleteVirtualMachine(ManagedObjectReference vmmor, boolean confirmed) throws RemoteException, Exception {
@@ -218,8 +216,7 @@ public class VsphereClient {
 	}
 
 	public static void deleteVirtualMachine(VirtualMachine vm, boolean confirmed) throws RemoteException, Exception {
-		VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-		if (powerState == VirtualMachinePowerState.poweredOn) {
+		if (VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOn, false)) {
 			VsphereClient.powerOffVirtualMachine(vm, confirmed);
 		}
 
@@ -247,10 +244,8 @@ public class VsphereClient {
 			if (Configuration.has("description")) {
 				spec.setAnnotation(Configuration.getString("description"));
 			} else if (Configuration.has("cpu") || Configuration.has("memory")) {
-				VirtualMachinePowerState powerState = vm.getRuntime().getPowerState();
-				if (powerState == VirtualMachinePowerState.poweredOn) {
-					throw new RuntimeException("Invalid power state: Machine is powered on");
-				}
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
+
 				if (Configuration.has("cpu")) {
 					spec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 					spec.setNumCoresPerSocket(1);
@@ -298,6 +293,16 @@ public class VsphereClient {
 				DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
 				VirtualDeviceConfigSpec dev = VsphereFactory.getVirtualNicForPortGroup(port, type, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
 				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
+			} else if ((Configuration.has("odd") || Configuration.has("floppy")) && Configuration.has("storage")) {
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
+
+				VirtualDeviceConfigSpec dev = null;
+				if (Configuration.has("odd")) {
+					dev = VsphereFactory.getCdromDrive(vm, Configuration.getString("storage"), Configuration.getString("dc"), Configuration.getString("odd"));
+				} else {
+					dev = VsphereFactory.getFloppyDiskDrive(vm, Configuration.getString("storage"), Configuration.getString("dc"), Configuration.getString("floppy"));
+				}
+				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
@@ -316,6 +321,35 @@ public class VsphereClient {
 				}
 				VirtualDeviceConfigSpec dev = new VirtualDeviceConfigSpec();
 				dev.setDevice(card);
+				dev.setOperation(VirtualDeviceConfigSpecOperation.remove);
+				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
+			} else if ((Configuration.has("odd") || Configuration.has("floppy")) && Configuration.has("storage")) {
+				VsphereQuery.checkVirtualMachinePowerState(vm, VirtualMachinePowerState.poweredOff);
+
+				VirtualDevice device = null;
+				if (Configuration.has("odd")) {
+					List<VirtualCdrom> cdroms = VsphereQuery.getVirtualMachineCdromDrives(vm);
+					for (VirtualCdrom virtualCdrom : cdroms) {
+						if (((VirtualCdromIsoBackingInfo) virtualCdrom.getBacking()).getFileName().contains(Configuration.getString("odd"))) {
+							device = virtualCdrom;
+						}
+					}
+				} else {
+					List<VirtualFloppy> floppies = VsphereQuery.getVirtualMachineFloppyDrives(vm);
+					for (VirtualFloppy virtualFloppy : floppies) {
+						if (((VirtualFloppyImageBackingInfo) virtualFloppy.getBacking()).getFileName().contains(Configuration.getString("floppy"))) {
+							device = virtualFloppy;
+						}
+					}
+				}
+
+				if (device == null) {
+					Formatter.printErrorLine("Could not find any devices with the given file");
+					System.exit(-1);
+				}
+
+				VirtualDeviceConfigSpec dev = new VirtualDeviceConfigSpec();
+				dev.setDevice(device);
 				dev.setOperation(VirtualDeviceConfigSpecOperation.remove);
 				spec.setDeviceChange(new VirtualDeviceConfigSpec[] { dev });
 			} else {
@@ -473,6 +507,42 @@ public class VsphereClient {
 
 		for (ManagedEntity child : childs) {
 			Formatter.printInfoLine(child.getName());
+		}
+	}
+
+	protected static void DatastoreListMode(ManagedObjectReference dsref) throws FileFault, InvalidDatastore, RuntimeFault, RemoteException, InterruptedException {
+		VsphereClient.DatastoreListMode(new Datastore(VsphereManager.getServerConnection(), dsref));
+	}
+
+	protected static void DatastoreListMode(Datastore ds) throws FileFault, InvalidDatastore, RuntimeFault, RemoteException, InterruptedException {
+		FileQueryFlags flags = new FileQueryFlags();
+		flags.setFileType(true);
+		flags.setFileOwner(true);
+		flags.setFileSize(true);
+
+		HostDatastoreBrowserSearchSpec spec = new HostDatastoreBrowserSearchSpec();
+		spec.setDetails(flags);
+
+		Task t = ds.getBrowser().searchDatastoreSubFolders_Task(VsphereQuery.getVolumeName(ds.getInfo().getName()), spec);
+		t.waitForTask();
+		Object res = VsphereQuery.getTaskInfoResult(t);
+
+		List<String> paths = new ArrayList<String>();
+
+		ArrayOfHostDatastoreBrowserSearchResults results = (ArrayOfHostDatastoreBrowserSearchResults) res;
+		for (HostDatastoreBrowserSearchResults r : results.getHostDatastoreBrowserSearchResults()) {
+			String root = r.getFolderPath().replace(VsphereQuery.getVolumeName(ds.getInfo().getName()) + " ", "").replace(VsphereQuery.getVolumeName(ds.getInfo().getName()), "");
+			for (FileInfo file : r.getFile()) {
+				paths.add(String.format("%s%s", root, file.getPath()));
+			}
+		}
+
+		Collections.sort(paths);
+
+		Formatter.printBorderedInfo(String.format("Objects found in datastore: %s\n", ds.getInfo().getName()));
+
+		for (String path : paths) {
+			Formatter.printInfoLine(path);
 		}
 	}
 }
