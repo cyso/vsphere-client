@@ -193,6 +193,27 @@ public class VsphereFactory {
 		VirtualFloppy floppy = new VirtualFloppy();
 		floppy.setKey(VsphereFactory.getKey());
 
+		int devs = 0;
+		for (VirtualDevice device : vm.getConfig().getHardware().getDevice()) {
+			if ((device instanceof VirtualFloppy)) {
+				devs += device.getUnitNumber() + 1;
+			}
+		}
+
+		switch (devs) {
+		case 0:
+		case 2:
+			floppy.setUnitNumber(0);
+			break;
+		case 1:
+			floppy.setUnitNumber(1);
+			break;
+		default:
+			Formatter.printErrorLine("All floppy slots are used.");
+			System.exit(-1);
+			break;
+		}
+
 		try {
 			VirtualFloppyImageBackingInfo flpBacking = new VirtualFloppyImageBackingInfo();
 
