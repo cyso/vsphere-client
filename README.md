@@ -35,7 +35,7 @@ SYNOPSIS
 
 **MODIFYVM**
 
-	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --memory <MEM> | --network <NETWORK> | --parameter <PARAM> --dc <VDC>  [--folder <F>] --fqdn <FQDN> -m --mac <MAC>   [-p <PASSWORD>]  [-s <SERVER>] [-u <USER>] [--value <VALUE>]
+	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --floppy <FLP> | --memory <MEM> | --network <NETWORK> | --odd <ISO> | --parameter <PARAM> --dc <VDC>   [--folder <F>] --fqdn <FQDN> -m --mac <MAC>    [-p <PASSWORD>]  [-s <SERVER>] [--storage <S>] [-u <USER>] [--value <VALUE>]
 
 **POWERONVM**
 
@@ -51,7 +51,7 @@ SYNOPSIS
 
 **LIST**
 
-	vsphere-client [-c <FILE>] [--cluster <C>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [-u <USER>]
+	vsphere-client [-c <FILE>] [--cluster <C>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [--storage <S>] [-u <USER>]
 
 **POWEROFFVM**
 
@@ -73,7 +73,7 @@ Add a new VM
 
 **--action** *ACTION* 
 
-What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, use modify in all other cases
+What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, --odd and --floppy, use modify in all other cases
 
 **-c** **--config** *FILE* 
 
@@ -119,6 +119,10 @@ Select this ESX cluster. Mutually exclusive with --esxnode
 
 Select this ESX node. Mutually exclusive with --esxcluster
 
+**--floppy** *FLP* 
+
+FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides
+
 **--folder** *F* 
 
 Select this Folder. Specify as a Unix path, e.g.: /Customers/C
@@ -133,7 +137,7 @@ Show help and examples
 
 **-l** **--list** *TYPE* 
 
-List vSphere objects (folder|vm|cluster|esxnode|storage|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster
+List vSphere objects (folder|vm|cluster|esxnode|storage|storagefolder|network). VM objects can be filtered using --fqdn. esxnode, storage and network require a --cluster. storagefolder requires --storage.
 
 **--mac** *MAC* 
 
@@ -150,6 +154,10 @@ Modify an existing VM. Requires confirmation. Note that the VM must be powered o
 **--network** *NETWORK* 
 
 Network of the object to create
+
+**--odd** *ISO* 
+
+ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides
 
 **--os** *OS* 
 
