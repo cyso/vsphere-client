@@ -292,7 +292,6 @@ public class VsphereQuery {
 		List<NetworkSummary> output = new ArrayList<NetworkSummary>();
 		for (VirtualMachineNetworkInfo netInfo : config.getNetwork()) {
 			NetworkSummary netSummary = netInfo.getNetwork();
-			System.out.println("Network: " + netSummary.getName());
 			if (netSummary.isAccessible()) {
 				if (keyFilter != null && !netSummary.getName().contains(keyFilter)) {
 					continue;
@@ -308,7 +307,6 @@ public class VsphereQuery {
 		List<DistributedVirtualPortgroupInfo> output = new ArrayList<DistributedVirtualPortgroupInfo>();
 		for (DistributedVirtualPortgroupInfo portGroup : config.getDistributedVirtualPortgroup()) {
 			String pgName = portGroup.getPortgroupName();
-			System.out.println("PortGroup: " + pgName);
 			if (keyFilter != null && !pgName.contains(keyFilter)) {
 				continue;
 			} else {
@@ -323,7 +321,6 @@ public class VsphereQuery {
 		List<DistributedVirtualSwitchInfo> output = new ArrayList<DistributedVirtualSwitchInfo>();
 		for (DistributedVirtualSwitchInfo sw : config.getDistributedVirtualSwitch()) {
 			String swName = sw.getSwitchName();
-			System.out.println("Switch: " + swName);
 			if (keyFilter != null && !swName.contains(keyFilter)) {
 				continue;
 			} else {
@@ -339,7 +336,6 @@ public class VsphereQuery {
 		for (VirtualMachineDatastoreInfo ds : config.getDatastore()) {
 			DatastoreSummary dsSummary = ds.getDatastore();
 			String dsName = dsSummary.getName();
-			System.out.println("DataStore: " + dsName);
 			if (keyFilter != null && !dsName.contains(keyFilter)) {
 				continue;
 			} else {
@@ -431,7 +427,6 @@ public class VsphereQuery {
 				for (ManagedObjectReference ref : refs.getManagedObjectReference()) {
 					String name = (String) VsphereQuery.getEntityProps(ref, new String[] { "name" }).get("name");
 					if (ref.getType().equals("Folder")) {
-						// System.out.println(StringUtils.repeat("\t", depth) + name);
 						if (type == VMFolderObjectType.Folder && filters != null && !filters.isEmpty()) {
 							boolean flag = false;
 							for (String folder : filters) {
@@ -461,7 +456,6 @@ public class VsphereQuery {
 								continue;
 							}
 						}
-						// System.out.println(StringUtils.repeat("\t", depth) + "- " + name);
 						if (type == VMFolderObjectType.VirtualMachine) {
 							out.put(String.format("%s/%s", (parentName == null) ? "" : parentName, name), ref);
 						}
