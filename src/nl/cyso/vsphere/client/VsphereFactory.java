@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import nl.cyso.vsphere.client.config.Configuration;
 import nl.nekoconeko.configmode.Formatter;
 
 import com.vmware.vim25.ConfigTarget;
@@ -124,8 +123,13 @@ public class VsphereFactory {
 			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - 10 * 1024);
 		}
 
+		VirtualEthernetCardMacType macmode = VirtualEthernetCardMacType.manual;
+		if (mac == null) {
+			macmode = VirtualEthernetCardMacType.generated;
+		}
+
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
-		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.manual, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
+		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, macmode, mac, VirtualDeviceConfigSpecOperation.add);
 
 		VirtualDeviceConfigSpec[] deviceConfigSpec = null;
 		if (disk2Spec != null) {
