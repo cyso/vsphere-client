@@ -86,7 +86,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter mac = new ConfigParameter("mac", true, "MAC", "MAC address of the object to create");
 		ConfigParameter cpu = new ConfigParameter("cpu", true, "CPU", "Amount of CPUs (cores) of the object to create");
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
-		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
+		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Total disk size (in MB) of the object to create. Minimum is 10240MB");
+		ConfigParameter disksplit = new ConfigParameter("disksplit", true, "DSKSPLT", "If the total --disk size is larger than this size (in MB), create a second disk with the remaining size. Default is 1024MB");
+		disksplit.setOptionalArg(true);
 		ConfigParameter guest = new ConfigParameter("guest", true, "GST", "Guest OS identifier. See man page for full list");
 		guest.setOptionalArg(true);
 
@@ -213,6 +215,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		addvm.addOption(folder);
 		addvm.addRequiredOptions(creationopts);
 		addvm.addOption(mac);
+		addvm.addOption(disksplit);
 		addvm.addOption(template);
 		addvm.addOption(guest);
 

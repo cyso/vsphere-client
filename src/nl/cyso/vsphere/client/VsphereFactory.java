@@ -65,7 +65,7 @@ public class VsphereFactory {
 		return key++;
 	}
 
-	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, boolean suggestDatastore, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
+	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, int diskSplit, boolean suggestDatastore, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
@@ -116,11 +116,14 @@ public class VsphereFactory {
 			diskSizeMB = 10 * 1024;
 		}
 
-		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, 10 * 1024);
+		VirtualDeviceConfigSpec disk1Spec = null;
 		VirtualDeviceConfigSpec disk2Spec = null;
 
-		if (diskSizeMB > 10 * 1024) {
-			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - 10 * 1024);
+		if (diskSizeMB > diskSplit) {
+			disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, diskSplit);
+			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - diskSplit);
+		} else {
+			disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, diskSizeMB);
 		}
 
 		VirtualEthernetCardMacType macmode = VirtualEthernetCardMacType.manual;

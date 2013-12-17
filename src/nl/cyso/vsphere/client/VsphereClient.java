@@ -131,11 +131,16 @@ public class VsphereClient {
 			mac = Configuration.getString("mac");
 		}
 
+		int disksplit = 10240;
+		if (Configuration.has("disksplit") && !Configuration.getString("disksplit").equals("")) {
+			disksplit = Integer.valueOf(Configuration.getString("disksplit"));
+		}
+
 		VirtualMachineConfigSpec vmConfigSpec;
 		if (Configuration.has("storagecluster") && !Configuration.getString("storagecluster").equals("")) {
-			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), true, mac, Configuration.getString("network"), crmor, hostmor);
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), disksplit, true, mac, Configuration.getString("network"), crmor, hostmor);
 		} else {
-			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), false, mac, Configuration.getString("network"), crmor, hostmor);
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), disksplit, false, mac, Configuration.getString("network"), crmor, hostmor);
 		}
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
