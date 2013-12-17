@@ -99,7 +99,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 
 		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
-		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, cpu, memory, disk);
+		List<ConfigParameter> creationopts = Arrays.asList(fqdn, description, network, cpu, memory, disk);
 
 		// Output options
 		ConfigParameter detailed = new ConfigParameter("detailed", false, null, "Output detailed information about the selected objects");
@@ -213,6 +213,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		addvm.addOption(folder);
 		addvm.addRequiredOptions(creationopts);
 		addvm.addOption(mac);
+		addvm.addOption(template);
 		addvm.addOption(guest);
 
 		ConfigModes.addMode("ROOT", root);
