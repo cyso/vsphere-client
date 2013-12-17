@@ -86,8 +86,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter mac = new ConfigParameter("mac", true, "MAC", "MAC address of the object to create");
 		ConfigParameter cpu = new ConfigParameter("cpu", true, "CPU", "Amount of CPUs (cores) of the object to create");
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
-		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
 		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
+		ConfigParameter guest = new ConfigParameter("guest", true, "GST", "Guest OS identifier. See man page for full list");
+		guest.setOptionalArg(true);
 
 		ConfigParameter odd = new ConfigParameter("odd", true, "ISO", "ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides");
 		ConfigParameter floppy = new ConfigParameter("floppy", true, "FLP", "FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides");
@@ -98,7 +99,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 
 		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
-		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, cpu, memory, os, disk);
+		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, cpu, memory, disk);
 
 		// Output options
 		ConfigParameter detailed = new ConfigParameter("detailed", false, null, "Output detailed information about the selected objects");
@@ -212,6 +213,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		addvm.addOption(folder);
 		addvm.addRequiredOptions(creationopts);
 		addvm.addOption(mac);
+		addvm.addOption(guest);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);

@@ -142,7 +142,19 @@ public class VsphereClient {
 		vmConfigSpec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
-		vmConfigSpec.setGuestId(VMGuestType.ubuntu64Guest.toString());
+
+		if (Configuration.has("guest") && !Configuration.getString("guest").equals("")) {
+			VMGuestType guest = null;
+			try {
+				guest = VMGuestType.valueOf(Configuration.getString("guest"));
+			} catch (IllegalArgumentException iae) {
+				throw new RuntimeException("Failure: invalid guest type selected: " + Configuration.getString("guest"));
+			}
+			vmConfigSpec.setGuestId(guest.toString());
+		} else {
+			// Fallback to generic 64bit guest
+			vmConfigSpec.setGuestId(VMGuestType.otherGuest64.toString());
+		}
 
 		Task task = vmFolder.createVM_Task(vmConfigSpec, new ResourcePool(VsphereManager.getServerConnection(), resourcepoolmor), new HostSystem(VsphereManager.getServerConnection(), hostmor));
 		if (task.waitForTask() == Task.SUCCESS) {
