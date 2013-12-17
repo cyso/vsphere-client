@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
+import nl.cyso.vsphere.client.constants.BootDeviceType;
 import nl.cyso.vsphere.client.constants.ListModeType;
 import nl.cyso.vsphere.client.constants.VMGuestType;
 import nl.nekoconeko.configmode.Formatter;
@@ -62,10 +63,17 @@ import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
+import com.vmware.vim25.VirtualDisk;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualFloppy;
 import com.vmware.vim25.VirtualFloppyImageBackingInfo;
+import com.vmware.vim25.VirtualMachineBootOptions;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableCdromDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableDiskDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableEthernetDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableFloppyDevice;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
 import com.vmware.vim25.VmConfigFault;
@@ -266,6 +274,52 @@ public class VsphereClient {
 				parameter.setValue(Configuration.getString("value"));
 
 				spec.setExtraConfig(new OptionValue[] { parameter });
+			} else if (Configuration.has("boot")) {
+				VirtualMachineBootOptions bootopts = new VirtualMachineBootOptions();
+				String[] order = Configuration.getString("boot").split(",");
+				if (order.length < 1) {
+					throw new RuntimeException("Failure: At least one boot option must be provided");
+				}
+				List<VirtualMachineBootOptionsBootableDevice> bootorder = new ArrayList<VirtualMachineBootOptionsBootableDevice>(order.length);
+				for (String ord : order) {
+					BootDeviceType type = null;
+					try {
+						type = BootDeviceType.valueOf(ord.toUpperCase());
+					} catch (IllegalArgumentException iae) {
+						throw new RuntimeException("Failure: Invalid boot device specified: " + ord);
+					}
+					switch (type) {
+					case CDROM:
+						VirtualMachineBootOptionsBootableCdromDevice cd = new VirtualMachineBootOptionsBootableCdromDevice();
+						bootorder.add(cd);
+						break;
+					case FLOPPY:
+						VirtualMachineBootOptionsBootableFloppyDevice floppy = new VirtualMachineBootOptionsBootableFloppyDevice();
+						bootorder.add(floppy);
+						break;
+					case DISK:
+						VirtualMachineBootOptionsBootableDiskDevice disk = new VirtualMachineBootOptionsBootableDiskDevice();
+						List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+						if (disks.size() < 1) {
+							throw new RuntimeException("Failure: VirtualMachine has no disks");
+						}
+						disk.setDeviceKey(disks.get(0).getKey());
+						bootorder.add(disk);
+						break;
+					case NETWORK:
+						VirtualMachineBootOptionsBootableEthernetDevice nic = new VirtualMachineBootOptionsBootableEthernetDevice();
+						VirtualEthernetCard[] nics = VsphereQuery.getVirtualMachineNetworks(vm).values().toArray(new VirtualEthernetCard[0]);
+						if (nics.length < 1) {
+							throw new RuntimeException("Failure: VirtualMachine has no NICs");
+						}
+						nic.setDeviceKey(nics[0].getKey());
+						bootorder.add(nic);
+						break;
+					}
+				}
+
+				bootopts.setBootOrder(bootorder.toArray(new VirtualMachineBootOptionsBootableDevice[0]));
+				spec.setBootOptions(bootopts);
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
