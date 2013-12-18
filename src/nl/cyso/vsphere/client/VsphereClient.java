@@ -76,6 +76,7 @@ import com.vmware.vim25.VirtualMachineBootOptionsBootableEthernetDevice;
 import com.vmware.vim25.VirtualMachineBootOptionsBootableFloppyDevice;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
+import com.vmware.vim25.VirtualMachineToolsStatus;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
@@ -509,8 +510,24 @@ public class VsphereClient {
 						String networks = StringUtils.join(card_info, " | ");
 						String annotation = vm.getConfig().getAnnotation();
 
-						// FQDN ESXNODE CPU/MEM
-						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						String vmTools = "unknown";
+						VirtualMachineToolsStatus vmToolsStatus = vm.getGuest().getToolsStatus();
+
+						switch (vmToolsStatus) {
+						case toolsOk:
+						case toolsOld:
+							vmTools = "installed";
+							break;
+						case toolsNotInstalled:
+							vmTools = "not installed";
+							break;
+						case toolsNotRunning:
+							vmTools = "not running";
+							break;
+						}
+
+						// FQDN ESXNODE CPU/MEM Tools
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d Tools:%s", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10, vmTools));
 						// MAC@Network... Description
 						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}
