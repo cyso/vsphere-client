@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import nl.cyso.vsphere.client.config.Configuration;
+import nl.cyso.vsphere.client.constants.BootDeviceType;
 import nl.cyso.vsphere.client.constants.ListModeType;
 import nl.cyso.vsphere.client.constants.VMGuestType;
 import nl.nekoconeko.configmode.Formatter;
@@ -62,12 +63,20 @@ import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
+import com.vmware.vim25.VirtualDisk;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardMacType;
 import com.vmware.vim25.VirtualFloppy;
 import com.vmware.vim25.VirtualFloppyImageBackingInfo;
+import com.vmware.vim25.VirtualMachineBootOptions;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableCdromDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableDiskDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableEthernetDevice;
+import com.vmware.vim25.VirtualMachineBootOptionsBootableFloppyDevice;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachinePowerState;
+import com.vmware.vim25.VirtualMachineToolsStatus;
 import com.vmware.vim25.VmConfigFault;
 import com.vmware.vim25.mo.ClusterComputeResource;
 import com.vmware.vim25.mo.Datacenter;
@@ -118,19 +127,40 @@ public class VsphereClient {
 		} else {
 			vmFolder = new Datacenter(VsphereManager.getServerConnection(), dcmor).getVmFolder();
 		}
+		String mac = null;
+		if (Configuration.has("mac") && !Configuration.getString("mac").equals("")) {
+			mac = Configuration.getString("mac");
+		}
+
+		int disksplit = 10240;
+		if (Configuration.has("disksplit") && !Configuration.getString("disksplit").equals("")) {
+			disksplit = Integer.valueOf(Configuration.getString("disksplit"));
+		}
 
 		VirtualMachineConfigSpec vmConfigSpec;
 		if (Configuration.has("storagecluster") && !Configuration.getString("storagecluster").equals("")) {
-			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), true, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storagecluster"), Integer.valueOf(Configuration.getString("disk")), disksplit, true, mac, Configuration.getString("network"), crmor, hostmor);
 		} else {
-			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), false, Configuration.getString("mac"), Configuration.getString("network"), crmor, hostmor);
+			vmConfigSpec = VsphereFactory.createVirtualMachineConfigSpec(Configuration.getString("storage"), Integer.valueOf(Configuration.getString("disk")), disksplit, false, mac, Configuration.getString("network"), crmor, hostmor);
 		}
 		vmConfigSpec.setName(Configuration.getString("fqdn"));
 		vmConfigSpec.setAnnotation(Configuration.getString("description"));
 		vmConfigSpec.setMemoryMB(Long.parseLong(Configuration.getString("memory")));
 		vmConfigSpec.setNumCPUs(Integer.parseInt(Configuration.getString("cpu")));
 		vmConfigSpec.setNumCoresPerSocket(1);
-		vmConfigSpec.setGuestId(VMGuestType.ubuntu64Guest.toString());
+
+		if (Configuration.has("guest") && !Configuration.getString("guest").equals("")) {
+			VMGuestType guest = null;
+			try {
+				guest = VMGuestType.valueOf(Configuration.getString("guest"));
+			} catch (IllegalArgumentException iae) {
+				throw new RuntimeException("Failure: invalid guest type selected: " + Configuration.getString("guest"));
+			}
+			vmConfigSpec.setGuestId(guest.toString());
+		} else {
+			// Fallback to generic 64bit guest
+			vmConfigSpec.setGuestId(VMGuestType.otherGuest64.toString());
+		}
 
 		Task task = vmFolder.createVM_Task(vmConfigSpec, new ResourcePool(VsphereManager.getServerConnection(), resourcepoolmor), new HostSystem(VsphereManager.getServerConnection(), hostmor));
 		if (task.waitForTask() == Task.SUCCESS) {
@@ -262,6 +292,52 @@ public class VsphereClient {
 				parameter.setValue(Configuration.getString("value"));
 
 				spec.setExtraConfig(new OptionValue[] { parameter });
+			} else if (Configuration.has("boot")) {
+				VirtualMachineBootOptions bootopts = new VirtualMachineBootOptions();
+				String[] order = Configuration.getString("boot").split(",");
+				if (order.length < 1) {
+					throw new RuntimeException("Failure: At least one boot option must be provided");
+				}
+				List<VirtualMachineBootOptionsBootableDevice> bootorder = new ArrayList<VirtualMachineBootOptionsBootableDevice>(order.length);
+				for (String ord : order) {
+					BootDeviceType type = null;
+					try {
+						type = BootDeviceType.valueOf(ord.toUpperCase());
+					} catch (IllegalArgumentException iae) {
+						throw new RuntimeException("Failure: Invalid boot device specified: " + ord);
+					}
+					switch (type) {
+					case CDROM:
+						VirtualMachineBootOptionsBootableCdromDevice cd = new VirtualMachineBootOptionsBootableCdromDevice();
+						bootorder.add(cd);
+						break;
+					case FLOPPY:
+						VirtualMachineBootOptionsBootableFloppyDevice floppy = new VirtualMachineBootOptionsBootableFloppyDevice();
+						bootorder.add(floppy);
+						break;
+					case DISK:
+						VirtualMachineBootOptionsBootableDiskDevice disk = new VirtualMachineBootOptionsBootableDiskDevice();
+						List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+						if (disks.size() < 1) {
+							throw new RuntimeException("Failure: VirtualMachine has no disks");
+						}
+						disk.setDeviceKey(disks.get(0).getKey());
+						bootorder.add(disk);
+						break;
+					case NETWORK:
+						VirtualMachineBootOptionsBootableEthernetDevice nic = new VirtualMachineBootOptionsBootableEthernetDevice();
+						VirtualEthernetCard[] nics = VsphereQuery.getVirtualMachineNetworks(vm).values().toArray(new VirtualEthernetCard[0]);
+						if (nics.length < 1) {
+							throw new RuntimeException("Failure: VirtualMachine has no NICs");
+						}
+						nic.setDeviceKey(nics[0].getKey());
+						bootorder.add(nic);
+						break;
+					}
+				}
+
+				bootopts.setBootOrder(bootorder.toArray(new VirtualMachineBootOptionsBootableDevice[0]));
+				spec.setBootOptions(bootopts);
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
@@ -434,8 +510,24 @@ public class VsphereClient {
 						String networks = StringUtils.join(card_info, " | ");
 						String annotation = vm.getConfig().getAnnotation();
 
-						// FQDN ESXNODE CPU/MEM
-						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10));
+						String vmTools = "unknown";
+						VirtualMachineToolsStatus vmToolsStatus = vm.getGuest().getToolsStatus();
+
+						switch (vmToolsStatus) {
+						case toolsOk:
+						case toolsOld:
+							vmTools = "installed";
+							break;
+						case toolsNotInstalled:
+							vmTools = "not installed";
+							break;
+						case toolsNotRunning:
+							vmTools = "not running";
+							break;
+						}
+
+						// FQDN ESXNODE CPU/MEM Tools
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d Tools:%s", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10, vmTools));
 						// MAC@Network... Description
 						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}

@@ -30,7 +30,9 @@ public enum VMGuestType {
 	oracleLinux64Guest("Oracle Linux 4/5/6 (64-bit)"),
 	oracleLinuxGuest("Oracle Linux 4/5/6 (32-bit)"),
 	ubuntu64Guest("Ubuntu Linux (64-bit)"),
-	ubuntuGuest("Ubuntu Linux (32-bit)");
+	ubuntuGuest("Ubuntu Linux (32-bit)"),
+	otherGuest64("Other / Unknown Guest (64-bit)"),
+	otherGuest("Other / Unknown Guest (32-bit)");
 	// @formatter:on
 
 	@SuppressWarnings("unused")

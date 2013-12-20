@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import nl.cyso.vsphere.client.config.Configuration;
 import nl.nekoconeko.configmode.Formatter;
 
 import com.vmware.vim25.ConfigTarget;
@@ -66,7 +65,7 @@ public class VsphereFactory {
 		return key++;
 	}
 
-	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, boolean suggestDatastore, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
+	protected static VirtualMachineConfigSpec createVirtualMachineConfigSpec(String datastoreName, int diskSizeMB, int diskSplit, boolean suggestDatastore, String mac, String network, ManagedObjectReference computeResMor, ManagedObjectReference hostMor) throws RuntimeFault, RemoteException {
 		ConfigTarget configTarget = null;
 		try {
 			configTarget = VsphereQuery.getConfigTargetForHost(computeResMor, hostMor);
@@ -117,15 +116,23 @@ public class VsphereFactory {
 			diskSizeMB = 10 * 1024;
 		}
 
-		VirtualDeviceConfigSpec disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, 10 * 1024);
+		VirtualDeviceConfigSpec disk1Spec = null;
 		VirtualDeviceConfigSpec disk2Spec = null;
 
-		if (diskSizeMB > 10 * 1024) {
-			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - 10 * 1024);
+		if (diskSizeMB > diskSplit) {
+			disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, diskSplit);
+			disk2Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 1, datastoreRef, diskSizeMB - diskSplit);
+		} else {
+			disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, diskSizeMB);
+		}
+
+		VirtualEthernetCardMacType macmode = VirtualEthernetCardMacType.manual;
+		if (mac == null) {
+			macmode = VirtualEthernetCardMacType.generated;
 		}
 
 		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
-		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, VirtualEthernetCardMacType.manual, Configuration.getString("mac"), VirtualDeviceConfigSpecOperation.add);
+		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, macmode, mac, VirtualDeviceConfigSpecOperation.add);
 
 		VirtualDeviceConfigSpec[] deviceConfigSpec = null;
 		if (disk2Spec != null) {

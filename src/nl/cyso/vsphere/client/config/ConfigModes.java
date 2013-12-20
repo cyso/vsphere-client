@@ -54,6 +54,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter rebootmode = new ConfigParameter("x", "reboot-vm", false, "Reboot an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter modifymode = new ConfigParameter("m", "modify-vm", false, "Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.");
+		ConfigParameter uploadmode = new ConfigParameter("w", "upload-to-datastore", false, "Upload a file to a datastore.");
 
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
@@ -86,18 +87,25 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter mac = new ConfigParameter("mac", true, "MAC", "MAC address of the object to create");
 		ConfigParameter cpu = new ConfigParameter("cpu", true, "CPU", "Amount of CPUs (cores) of the object to create");
 		ConfigParameter memory = new ConfigParameter("memory", true, "MEM", "Memory (in MB) of the object to create");
-		ConfigParameter os = new ConfigParameter("os", true, "OS", "Operating System of the object to create");
-		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Disk size (in MB) of the object to create");
+		ConfigParameter disk = new ConfigParameter("disk", true, "DISK", "Total disk size (in MB) of the object to create. Minimum is 10240MB");
+		ConfigParameter disksplit = new ConfigParameter("disksplit", true, "DSKSPLT", "If the total --disk size is larger than this size (in MB), create a second disk with the remaining size. Default is 1024MB");
+		disksplit.setOptionalArg(true);
+		ConfigParameter guest = new ConfigParameter("guest", true, "GST", "Guest OS identifier. See man page for full list");
+		guest.setOptionalArg(true);
 
 		ConfigParameter odd = new ConfigParameter("odd", true, "ISO", "ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides");
 		ConfigParameter floppy = new ConfigParameter("floppy", true, "FLP", "FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides");
+		ConfigParameter boot = new ConfigParameter("boot", true, "BT", "Change boot order. Specify as one or more values separated by a comman (,). Valid values are: disk, network, cdrom and floppy.");
 
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
 
+		ConfigParameter file = new ConfigParameter("file", true, "FILE", "File to process, specify a path to a local file on disk.");
+		ConfigParameter path = new ConfigParameter("path", true, "PATH", "Target location of the file, specify a Unix type path that does not start with /. Also see -l storagefolder. Will overwrite existing files with the same name and path!");
+
 		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
-		List<ConfigParameter> creationopts = Arrays.asList(template, fqdn, description, network, mac, cpu, memory, os, disk);
+		List<ConfigParameter> creationopts = Arrays.asList(fqdn, description, network, cpu, memory, disk);
 
 		// Output options
 		ConfigParameter detailed = new ConfigParameter("detailed", false, null, "Output detailed information about the selected objects");
@@ -115,6 +123,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modes.addOption(shutdownmode);
 		modes.addOption(rebootmode);
 		modes.addOption(modifymode);
+		modes.addOption(uploadmode);
 		modes.setRequired(true);
 
 		OptionGroup modifymodes = new OptionGroup();
@@ -125,6 +134,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(property);
 		modifymodes.addOption(odd);
 		modifymodes.addOption(floppy);
+		modifymodes.addOption(boot);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
@@ -209,6 +219,18 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		addvm.addRequiredOption(dc);
 		addvm.addOption(folder);
 		addvm.addRequiredOptions(creationopts);
+		addvm.addOption(mac);
+		addvm.addOption(disksplit);
+		addvm.addOption(template);
+		addvm.addOption(guest);
+
+		ConfigMode uploadtodatastore = new ConfigMode();
+		uploadtodatastore.addRequiredOption(uploadmode);
+		uploadtodatastore.addOptions(configopts);
+		uploadtodatastore.addRequiredOption(dc);
+		uploadtodatastore.addRequiredOption(storage);
+		uploadtodatastore.addRequiredOption(path);
+		uploadtodatastore.addRequiredOption(file);
 
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);
@@ -221,6 +243,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigModes.addMode("SHUTDOWNVM", shutdownvm);
 		ConfigModes.addMode("REBOOTVM", rebootvm);
 		ConfigModes.addMode("MODIFYVM", modifyvm);
+		ConfigModes.addMode("UPLOADTODATASTORE", uploadtodatastore);
 	}
 
 	public static void init() {

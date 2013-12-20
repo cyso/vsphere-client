@@ -55,6 +55,7 @@ import com.vmware.vim25.VirtualCdrom;
 import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
 import com.vmware.vim25.VirtualDeviceBackingInfo;
+import com.vmware.vim25.VirtualDisk;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
 import com.vmware.vim25.VirtualFloppy;
@@ -633,6 +634,25 @@ public class VsphereQuery {
 		}
 
 		return cdroms;
+	}
+
+	protected static List<VirtualDisk> getVirtualMachineDiskDrives(VirtualMachine vm) {
+		List<VirtualDisk> disks = new ArrayList<VirtualDisk>(4);
+
+		VirtualMachineConfigInfo info = vm.getConfig();
+		VirtualDevice[] devs = info.getHardware().getDevice();
+
+		for (VirtualDevice virtualDevice : devs) {
+			VirtualDeviceBackingInfo back = virtualDevice.getBacking();
+			if (back == null) {
+				continue;
+			}
+			if (virtualDevice instanceof VirtualDisk) {
+				disks.add((VirtualDisk) virtualDevice);
+			}
+		}
+
+		return disks;
 	}
 
 	protected static Map<String, ClusterComputeResource> getClustersForDatacenter(String datacenter) throws RuntimeFault, RemoteException {

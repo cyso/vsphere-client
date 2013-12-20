@@ -93,6 +93,8 @@ public class Configuration extends nl.nekoconeko.configmode.Configuration {
 					Configuration.set("mode", "REBOOTVM");
 				} else if (opt.getLongOpt().equals("modify-vm")) {
 					Configuration.set("mode", "MODIFYVM");
+				} else if (opt.getLongOpt().equals("upload-to-datastore")) {
+					Configuration.set("mode", "UPLOADTODATASTORE");
 				} else if (opt.getLongOpt().equals("ip")) {
 					try {
 						Configuration.set("ip", InetAddress.getByName(cli.getOptionValue(opt.getLongOpt())));
