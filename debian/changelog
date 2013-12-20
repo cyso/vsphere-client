@@ -1,3 +1,19 @@
+vsphere-client (0.6) precise; urgency=low
+
+  * Allow creation of VMs with generated MAC
+  * Add getVirtualMachineDiskDrives
+  * Allow configuration of boot order using MODIFYVM mode
+  * Allow for setting of Guest type during ADDVM
+  * Make template really optional
+  * Allow for specification of custom disk split size.
+  * Add VMware tools status to -l vm --detailed output
+  * Add UPLOADTODATASTORE ConfigMode
+  * Add HttpHelper
+  * Add Entry logic for UPLOADTODATASTORE
+  * Bump version, update README, update changelog
+
+ -- Nick Douma <n.douma@nekoconeko.nl>  Fri, 20 Dec 2013 17:14:36 +0100
+
 vsphere-client (0.5) precise; urgency=low
 
   * Remove old debug statements

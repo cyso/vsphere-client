@@ -23,7 +23,7 @@ Alternatively, if using Ubuntu or Debian, you can try using the vsphere-client P
 SYNOPSIS
 --------
 	
-	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -m | -r | -t | -v | -x | -y | -z [-c <FILE>]    [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
+	vsphere-client -a | -h <COMMAND> | -l <TYPE> | -m | -r | -t | -v | -w | -x | -y | -z [-c <FILE>]    [-p <PASSWORD>]  [-s <SERVER>]  [-u <USER>]
 
 **HELP**
 
@@ -31,11 +31,11 @@ SYNOPSIS
 
 **ADDVM**
 
-	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> --esxcluster <EC> | --esxnode <E>  [--folder <F>] --fqdn <FQDN> --mac <MAC> --memory <MEM> --network <NETWORK> --os <OS> [-p <PASSWORD>] [-s <SERVER>] --storage <S> | --storagecluster <SC>  --template <TEMPLATE> [-u <USER>]
+	vsphere-client -a [-c <FILE>] --cpu <CPU> --dc <VDC> --description <DESC> --disk <DISK> [--disksplit <DSKSPLT>] --esxcluster <EC> | --esxnode <E>  [--folder <F>] --fqdn <FQDN> [--guest <GST>] [--mac <MAC>] --memory <MEM> --network <NETWORK> [-p <PASSWORD>] [-s <SERVER>] --storage <S> | --storagecluster <SC>  [--template <TEMPLATE>] [-u <USER>]
 
 **MODIFYVM**
 
-	vsphere-client --action <ACTION> [-c <FILE>] [--confirm] --cpu <CPU> | --description <DESC> | --floppy <FLP> | --memory <MEM> | --network <NETWORK> | --odd <ISO> | --parameter <PARAM> --dc <VDC>   [--folder <F>] --fqdn <FQDN> -m --mac <MAC>    [-p <PASSWORD>]  [-s <SERVER>] [--storage <S>] [-u <USER>] [--value <VALUE>]
+	vsphere-client --action <ACTION> --boot <BT> | --cpu <CPU> | --description <DESC> | --floppy <FLP> | --memory <MEM> | --network <NETWORK> | --odd <ISO> | --parameter <PARAM> [-c <FILE>] [--confirm]  --dc <VDC>   [--folder <F>] --fqdn <FQDN> -m [--mac <MAC>]    [-p <PASSWORD>]  [-s <SERVER>] --storage <S> [-u <USER>] [--value <VALUE>]
 
 **POWERONVM**
 
@@ -45,13 +45,17 @@ SYNOPSIS
 
 	vsphere-client -v
 
+**UPLOADTODATASTORE**
+
+	vsphere-client [-c <FILE>] --dc <VDC> --file <FILE> [-p <PASSWORD>] --path <PATH> [-s <SERVER>] --storage <S> [-u <USER>] -w
+
 **REBOOTVM**
 
 	vsphere-client [-c <FILE>] [--confirm] --dc <VDC> [--folder <F>] --fqdn <FQDN> [-p <PASSWORD>] [-s <SERVER>] [-u <USER>] -x
 
 **LIST**
 
-	vsphere-client [-c <FILE>] [--cluster <C>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] [--storage <S>] [-u <USER>]
+	vsphere-client [-c <FILE>] [--cluster <C>] --dc <VDC> [--depth <DEPTH>] [--detailed] [--folder <F>] --fqdn <FQDN> -l <TYPE> [-p <PASSWORD>] [--properties] [-s <SERVER>] --storage <S> [-u <USER>]
 
 **POWEROFFVM**
 
@@ -74,6 +78,10 @@ Add a new VM
 **--action** *ACTION* 
 
 What action to take for --modify-vm mode (add|modify|delete). add/delete is only relevant for --network, --odd and --floppy, use modify in all other cases
+
+**--boot** *BT* 
+
+Change boot order. Specify as one or more values separated by a comman (,). Valid values are: disk, network, cdrom and floppy.
 
 **-c** **--config** *FILE* 
 
@@ -109,7 +117,11 @@ Output detailed information about the selected objects
 
 **--disk** *DISK* 
 
-Disk size (in MB) of the object to create
+Total disk size (in MB) of the object to create. Minimum is 10240MB
+
+**--disksplit** *DSKSPLT* 
+
+If the total --disk size is larger than this size (in MB), create a second disk with the remaining size. Default is 1024MB
 
 **--esxcluster** *EC* 
 
@@ -118,6 +130,10 @@ Select this ESX cluster. Mutually exclusive with --esxnode
 **--esxnode** *E* 
 
 Select this ESX node. Mutually exclusive with --esxcluster
+
+**--file** *FILE* 
+
+File to process, specify a path to a local file on disk.
 
 **--floppy** *FLP* 
 
@@ -130,6 +146,10 @@ Select this Folder. Specify as a Unix path, e.g.: /Customers/C
 **--fqdn** *FQDN* 
 
 Name of object to create
+
+**--guest** *GST* 
+
+Guest OS identifier. See man page for full list
 
 **-h** **--help** *COMMAND* 
 
@@ -159,13 +179,13 @@ Network of the object to create
 
 ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides
 
-**--os** *OS* 
-
-Operating System of the object to create
-
 **--parameter** *PARAM* 
 
 Virtual Machine parameter to modify
+
+**--path** *PATH* 
+
+Target location of the file, specify a Unix type path that does not start with /. Also see -l storagefolder. Will overwrite existing files with the same name and path!
 
 **-p** **--password** *PASSWORD* 
 
@@ -210,6 +230,10 @@ Virtual Machine parameter value
 **-v** **--version** *arg* 
 
 Show version information
+
+**-w** **--upload-to-datastore** *arg* 
+
+Upload a file to a datastore.
 
 **-x** **--reboot-vm** *arg* 
 
