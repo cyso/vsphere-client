@@ -54,6 +54,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter shutdownmode = new ConfigParameter("z", "shutdown-vm", false, "Shutdown an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter rebootmode = new ConfigParameter("x", "reboot-vm", false, "Reboot an existing VM (soft shutdown). Requires confirmation");
 		ConfigParameter modifymode = new ConfigParameter("m", "modify-vm", false, "Modify an existing VM. Requires confirmation. Note that the VM must be powered off for most actions.");
+		ConfigParameter uploadmode = new ConfigParameter("w", "upload-to-datastore", false, "Upload a file to a datastore.");
 
 		// Selectors
 		ConfigParameter dc = new ConfigParameter("dc", true, "VDC", "Select this Data Center");
@@ -99,6 +100,9 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
 
+		ConfigParameter file = new ConfigParameter("file", true, "FILE", "File to process, specify a path to a local file on disk.");
+		ConfigParameter path = new ConfigParameter("path", true, "PATH", "Target location of the file, specify a Unix type path that does not start with /. Also see -l storagefolder. Will overwrite existing files with the same name and path!");
+
 		ConfigParameter confirm = new ConfigParameter("confirm", false, null, "Confirm destructive actions, and allow them to execute.");
 
 		List<ConfigParameter> creationopts = Arrays.asList(fqdn, description, network, cpu, memory, disk);
@@ -119,6 +123,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modes.addOption(shutdownmode);
 		modes.addOption(rebootmode);
 		modes.addOption(modifymode);
+		modes.addOption(uploadmode);
 		modes.setRequired(true);
 
 		OptionGroup modifymodes = new OptionGroup();
@@ -219,6 +224,14 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		addvm.addOption(template);
 		addvm.addOption(guest);
 
+		ConfigMode uploadtodatastore = new ConfigMode();
+		uploadtodatastore.addRequiredOption(uploadmode);
+		uploadtodatastore.addOptions(configopts);
+		uploadtodatastore.addRequiredOption(dc);
+		uploadtodatastore.addRequiredOption(storage);
+		uploadtodatastore.addRequiredOption(path);
+		uploadtodatastore.addRequiredOption(file);
+
 		ConfigModes.addMode("ROOT", root);
 		ConfigModes.addMode("HELP", help);
 		ConfigModes.addMode("VERSION", version);
@@ -230,6 +243,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigModes.addMode("SHUTDOWNVM", shutdownvm);
 		ConfigModes.addMode("REBOOTVM", rebootvm);
 		ConfigModes.addMode("MODIFYVM", modifyvm);
+		ConfigModes.addMode("UPLOADTODATASTORE", uploadtodatastore);
 	}
 
 	public static void init() {
