@@ -18,12 +18,16 @@
  */
 package nl.cyso.vsphere.client;
 
+import java.io.File;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.rmi.RemoteException;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Configuration;
 import nl.cyso.vsphere.client.config.Version;
 import nl.cyso.vsphere.client.constants.ListModeType;
+import nl.cyso.vsphere.client.tools.HttpHelper;
 import nl.nekoconeko.configmode.Formatter;
 
 import org.apache.commons.cli.CommandLine;
@@ -169,7 +173,36 @@ public class Entry {
 				default:
 					throw new UnsupportedOperationException("List Mode not yet implemented");
 				}
+			} else if (mode.equals("UPLOADTODATASTORE")) {
+				Configuration.load("UPLOADTODATASTORE", args);
 
+				URL server = new URL(Configuration.getString("server"));
+				File file = new File(Configuration.getString("file"));
+				String path = String.format("%s/%s", Configuration.getString("path"), file.getName());
+				if (path.charAt(0) != '/') {
+					path = "/" + path;
+				}
+
+				String uri = String.format("%s://%s/folder%s?dcPath=%s&dsName=%s", server.getProtocol(), server.getHost(), path, URLEncoder.encode(Configuration.getString("dc"), "UTF-8"), URLEncoder.encode(Configuration.getString("storage"), "UTF-8"));
+
+				Formatter.printInfoLine("Connecting to Datastore...");
+				HttpHelper http = new HttpHelper(new URL(uri), Configuration.getString("username"), Configuration.getString("password"), true);
+
+				Formatter.printInfoLine("Uploading file...");
+				int response = http.putFile(file);
+
+				switch (response) {
+				case 200:
+					Formatter.printInfoLine("File updated!");
+					break;
+				case 201:
+					Formatter.printInfoLine("File created!");
+					break;
+				default:
+					throw new RemoteException("Upload failed, HTTP error code: " + String.valueOf(response));
+				}
+
+				Formatter.printInfoLine("Upload finished!");
 			} else {
 				throw new UnsupportedOperationException("Mode not yet implemented");
 			}
