@@ -617,6 +617,14 @@ public class VsphereQuery {
 		return floppies;
 	}
 
+	protected static int getVirtualMachineCPU(VirtualMachine vm) {
+		return vm.getSummary().getConfig().getNumCpu();
+	}
+
+	protected static int getVirtualMachineMemory(VirtualMachine vm) {
+		return vm.getSummary().getConfig().getMemorySizeMB();
+	}
+
 	protected static List<VirtualCdrom> getVirtualMachineCdromDrives(VirtualMachine vm) {
 		List<VirtualCdrom> cdroms = new ArrayList<VirtualCdrom>(4);
 
