@@ -26,11 +26,11 @@ public class Version extends nl.nekoconeko.configmode.Version {
 	/**
 	 * Official release version of vsphere-client
 	 */
-	public final String RELEASE_VERSION = "0.6";
+	public final String RELEASE_VERSION = "0.7";
 	/**
 	 * Actual Git revision according to `git describe` during bumping
 	 */
-	public final String BUILD_VERSION = "4c54499";
+	public final String BUILD_VERSION = "gd8c9941";
 
 	private static Version instance = null;
 
