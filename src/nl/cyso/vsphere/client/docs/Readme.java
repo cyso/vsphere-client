@@ -18,6 +18,8 @@
  */
 package nl.cyso.vsphere.client.docs;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -26,6 +28,7 @@ import java.util.List;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Version;
+import nl.cyso.vsphere.client.tools.ResourceHelper;
 import nl.nekoconeko.configmode.ConfigModeSorter;
 import nl.nekoconeko.configmode.ConfigParameter;
 
@@ -160,6 +163,35 @@ public class Readme {
 		return section.toString();
 	}
 
+	private String getExamplesSection() {
+		StringBuilder section = new StringBuilder();
+
+		try {
+			String ex = ResourceHelper.readResourceIntoString(this.getClass(), "examples.txt", "UTF-8");
+			BufferedReader examples = ResourceHelper.textToReader(ex);
+
+			section.append("EXAMPLES\n");
+			section.append("--------\n\n");
+
+			String line = null;
+			while ((line = examples.readLine()) != null) {
+				if (line.contains("[")) {
+					section.append(String.format("**%s**\n", line.replaceAll("\\[(.*)\\]", "$1")));
+				} else if (line.trim().equals("\n")) {
+					continue;
+				} else {
+					section.append(line + "\n");
+				}
+			}
+		} catch (IOException e) {
+			return "";
+		}
+
+		section.append("\n");
+
+		return section.toString();
+	}
+
 	private String getBuildSection() {
 		StringBuilder section = new StringBuilder();
 		section.append("BUILDING\n");
@@ -183,6 +215,7 @@ public class Readme {
 		System.out.print(r.getSynopsisSection());
 		System.out.print(r.getOptionsSection());
 		System.out.print(r.getConfigurationSection());
+		System.out.print(r.getExamplesSection());
 		System.out.print(r.getBugsSection());
 		System.out.print(r.getAuthorsSection());
 	}

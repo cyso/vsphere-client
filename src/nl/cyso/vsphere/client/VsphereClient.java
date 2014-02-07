@@ -56,7 +56,9 @@ import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
+import com.vmware.vim25.ResourceAllocationInfo;
 import com.vmware.vim25.RuntimeFault;
+import com.vmware.vim25.StorageIOAllocationInfo;
 import com.vmware.vim25.TaskInProgress;
 import com.vmware.vim25.VirtualCdrom;
 import com.vmware.vim25.VirtualCdromIsoBackingInfo;
@@ -338,6 +340,38 @@ public class VsphereClient {
 
 				bootopts.setBootOrder(bootorder.toArray(new VirtualMachineBootOptionsBootableDevice[0]));
 				spec.setBootOptions(bootopts);
+			} else if (Configuration.has("cpureservation") || Configuration.has("memreservation")) {
+				if (Configuration.has("cpureservation")) {
+					ResourceAllocationInfo resource = new ResourceAllocationInfo();
+					long res = Long.parseLong(Configuration.getString("cpureservation"));
+					resource.setReservation(res);
+					spec.setCpuAllocation(resource);
+					Formatter.printInfoLine(String.format("Setting CPU reservation to %d Mhz", res));
+				}
+				if (Configuration.has("memreservation")) {
+					ResourceAllocationInfo resource = new ResourceAllocationInfo();
+					long res = Long.parseLong(Configuration.getString("memreservation"));
+					resource.setReservation(Long.parseLong(Configuration.getString("memreservation")));
+					spec.setMemoryAllocation(resource);
+					Formatter.printInfoLine(String.format("Setting Memory reservation to %d MB", res));
+				}
+			} else if (Configuration.has("iopslimit") && Configuration.has("value")) {
+				List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+				for (VirtualDisk virtualDisk : disks) {
+					if (virtualDisk.getDeviceInfo().getLabel().equals(Configuration.getString("iopslimit"))) {
+						StorageIOAllocationInfo iops = virtualDisk.getStorageIOAllocation();
+						VirtualDeviceConfigSpec diskSpec = new VirtualDeviceConfigSpec();
+
+						iops.setLimit(Long.parseLong(Configuration.getString("value")));
+						virtualDisk.setStorageIOAllocation(iops);
+						diskSpec.setDevice(virtualDisk);
+						diskSpec.setOperation(VirtualDeviceConfigSpecOperation.edit);
+						spec.setDeviceChange(new VirtualDeviceConfigSpec[] { diskSpec });
+
+						Formatter.printInfoLine(String.format("Setting IOPS limit for %s to %s", Configuration.getString("iopslimit"), Configuration.getString("value")));
+						break;
+					}
+				}
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
@@ -526,10 +560,20 @@ public class VsphereClient {
 							break;
 						}
 
-						// FQDN ESXNODE CPU/MEM Tools
-						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d Tools:%s", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10, vmTools));
+						// FQDN ESXNODE CPU/MEM ReservationC/ReservationM Tools
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d RCPU:%d/RMEM:%d Tools:%s", object.getKey(), host.getName(), VsphereQuery.getVirtualMachineCPU(vm), VsphereQuery.getVirtualMachineMemory(vm), vm.getResourceConfig().getCpuAllocation().getReservation(), vm.getResourceConfig().getMemoryAllocation().getReservation(), vmTools));
 						// MAC@Network... Description
 						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+						String diskInfo = "-";
+						List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+						for (VirtualDisk virtualDisk : disks) {
+							String limit = virtualDisk.getStorageIOAllocation().getLimit().toString();
+							if (limit.equals("-1")) {
+								limit = "unlimited";
+							}
+							diskInfo += String.format(" [%s Size: %d MB IOPS: %s]", virtualDisk.getDeviceInfo().getLabel(), virtualDisk.getCapacityInKB() / 1024, limit);
+						}
+						Formatter.printInfoLine(diskInfo);
 					}
 					if (Configuration.has("properties")) {
 						Formatter.printInfoLine("- Virtual Machine properties");
