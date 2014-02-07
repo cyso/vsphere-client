@@ -127,6 +127,7 @@
 		       includeantruntime="false"
 			   classpath="${project.class.path}"
 		/>
+		<copy file="${docs.dir}/examples.txt" todir="${class.root}"/>
 	</target>
 	
 	<!-- Create an easy to use bash file -->
@@ -186,6 +187,7 @@ java -Xdebug -Xrunjdwp:transport=dt_socket,address=8998,server=y -classpath ${pr
 		<copy file="README.md" tofile="${dist.dir}/README.md" />
 		<mkdir dir="${class.root}/META-INF" />
 		<copy file="LICENSE" tofile="${class.root}/META-INF/LICENSE" />
+		<delete file="${class.root}/examples.txt" />
 
 		<jar destfile="${dist.dir}/${executable}.jar" basedir="${class.root}">
 			<manifest>

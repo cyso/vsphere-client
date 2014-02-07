@@ -18,6 +18,8 @@
  */
 package nl.cyso.vsphere.client.docs;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -29,6 +31,7 @@ import java.util.List;
 
 import nl.cyso.vsphere.client.config.ConfigModes;
 import nl.cyso.vsphere.client.config.Version;
+import nl.cyso.vsphere.client.tools.ResourceHelper;
 import nl.nekoconeko.configmode.ConfigModeSorter;
 import nl.nekoconeko.configmode.ConfigParameter;
 
@@ -171,6 +174,34 @@ public class ManPage {
 		return section.toString();
 	}
 
+	private String getExamplesSection() {
+		StringBuilder section = new StringBuilder();
+
+		try {
+			String ex = ResourceHelper.readResourceIntoString(this.getClass(), "examples.txt", "UTF-8");
+			BufferedReader examples = ResourceHelper.textToReader(ex);
+
+			section.append(".SH EXAMPLES\n");
+
+			String line = null;
+			while ((line = examples.readLine()) != null) {
+				if (line.contains("[")) {
+					section.append(".RS 4\n");
+					section.append(".B " + line.replaceAll("\\[(.*)\\]", "$1") + "\n");
+					section.append(".RE\n");
+				} else if (line.trim().equals("\n")) {
+					continue;
+				} else {
+					section.append(line + "\n");
+				}
+			}
+		} catch (IOException e) {
+			return "";
+		}
+
+		return section.toString();
+	}
+
 	public static void main(String[] args) {
 		ConfigModes.init();
 		ManPage m = new ManPage();
@@ -180,6 +211,7 @@ public class ManPage {
 		System.out.print(m.getSynopsisSection());
 		System.out.print(m.getOptionsSection());
 		System.out.print(m.getConfigurationSection());
+		System.out.print(m.getExamplesSection());
 		System.out.print(m.getBugsSection());
 		System.out.print(m.getAuthorsSection());
 	}
