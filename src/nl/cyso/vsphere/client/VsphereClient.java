@@ -546,6 +546,16 @@ public class VsphereClient {
 						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d RCPU:%d/RMEM:%d Tools:%s", object.getKey(), host.getName(), VsphereQuery.getVirtualMachineCPU(vm), VsphereQuery.getVirtualMachineMemory(vm), vm.getResourceConfig().getCpuAllocation().getReservation(), vm.getResourceConfig().getMemoryAllocation().getReservation(), vmTools));
 						// MAC@Network... Description
 						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
+						String diskInfo = "-";
+						List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+						for (VirtualDisk virtualDisk : disks) {
+							String limit = virtualDisk.getStorageIOAllocation().getLimit().toString();
+							if (limit.equals("-1")) {
+								limit = "unlimited";
+							}
+							diskInfo += String.format(" [%s Size: %d MB IOPS: %s]", virtualDisk.getDeviceInfo().getLabel(), virtualDisk.getCapacityInKB() / 1024, limit);
+						}
+						Formatter.printInfoLine(diskInfo);
 					}
 					if (Configuration.has("properties")) {
 						Formatter.printInfoLine("- Virtual Machine properties");
