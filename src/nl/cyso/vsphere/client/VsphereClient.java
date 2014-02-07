@@ -58,6 +58,7 @@ import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
 import com.vmware.vim25.ResourceAllocationInfo;
 import com.vmware.vim25.RuntimeFault;
+import com.vmware.vim25.StorageIOAllocationInfo;
 import com.vmware.vim25.TaskInProgress;
 import com.vmware.vim25.VirtualCdrom;
 import com.vmware.vim25.VirtualCdromIsoBackingInfo;
@@ -353,6 +354,23 @@ public class VsphereClient {
 					resource.setReservation(Long.parseLong(Configuration.getString("memreservation")));
 					spec.setMemoryAllocation(resource);
 					Formatter.printInfoLine(String.format("Setting Memory reservation to %d MB", res));
+				}
+			} else if (Configuration.has("iopslimit") && Configuration.has("value")) {
+				List<VirtualDisk> disks = VsphereQuery.getVirtualMachineDiskDrives(vm);
+				for (VirtualDisk virtualDisk : disks) {
+					if (virtualDisk.getDeviceInfo().getLabel().equals(Configuration.getString("iopslimit"))) {
+						StorageIOAllocationInfo iops = virtualDisk.getStorageIOAllocation();
+						VirtualDeviceConfigSpec diskSpec = new VirtualDeviceConfigSpec();
+
+						iops.setLimit(Long.parseLong(Configuration.getString("value")));
+						virtualDisk.setStorageIOAllocation(iops);
+						diskSpec.setDevice(virtualDisk);
+						diskSpec.setOperation(VirtualDeviceConfigSpecOperation.edit);
+						spec.setDeviceChange(new VirtualDeviceConfigSpec[] { diskSpec });
+
+						Formatter.printInfoLine(String.format("Setting IOPS limit for %s to %s", Configuration.getString("iopslimit"), Configuration.getString("value")));
+						break;
+					}
 				}
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");

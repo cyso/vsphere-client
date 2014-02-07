@@ -98,6 +98,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter boot = new ConfigParameter("boot", true, "BT", "Change boot order. Specify as one or more values separated by a comman (,). Valid values are: disk, network, cdrom and floppy.");
 		ConfigParameter cpureservation = new ConfigParameter("cpureservation", true, "CR", "Change CPU reservation, value is in Mhz");
 		ConfigParameter memreservation = new ConfigParameter("memreservation", true, "MR", "Change memory reservation, value is in MB");
+		ConfigParameter iopslimit = new ConfigParameter("iopslimit", true, "IL", "Change IOPS limits. Specify disk name, use with --value to specify the limit.");
 
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
@@ -139,6 +140,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(boot);
 		modifymodes.addOption(cpureservation);
 		modifymodes.addOption(memreservation);
+		modifymodes.addOption(iopslimit);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();
