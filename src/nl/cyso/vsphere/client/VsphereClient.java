@@ -526,8 +526,8 @@ public class VsphereClient {
 							break;
 						}
 
-						// FQDN ESXNODE CPU/MEM Tools
-						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d Tools:%s", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10, vmTools));
+						// FQDN ESXNODE CPU/MEM ReservationC/ReservationM Tools
+						Formatter.printInfoLine(String.format("%-53s %20s CPU:%d/MEM:%d RCPU:%d/RMEM:%d Tools:%s", object.getKey(), host.getName(), vm.getConfig().getCpuAllocation().getShares().getShares() / 1000, vm.getConfig().getMemoryAllocation().getShares().getShares() / 10, vm.getResourceConfig().getCpuAllocation().getReservation(), vm.getResourceConfig().getMemoryAllocation().getReservation(), vmTools));
 						// MAC@Network... Description
 						Formatter.printInfoLine(String.format("- [%s] [%s]", networks, annotation == null ? "" : annotation.replace('\n', ' ')));
 					}
