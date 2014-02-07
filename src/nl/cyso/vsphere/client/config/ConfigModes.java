@@ -96,6 +96,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		ConfigParameter odd = new ConfigParameter("odd", true, "ISO", "ODD drive to create with ISO file to mount. Use with --storage to select the datastore where the ISO file resides");
 		ConfigParameter floppy = new ConfigParameter("floppy", true, "FLP", "FDD drive to create with floppy file to mount. Use with --storage to select the datastore where the ISO file resides");
 		ConfigParameter boot = new ConfigParameter("boot", true, "BT", "Change boot order. Specify as one or more values separated by a comman (,). Valid values are: disk, network, cdrom and floppy.");
+		ConfigParameter cpureservation = new ConfigParameter("cpureservation", true, "CR", "Change CPU reservation, value is in Mhz");
+		ConfigParameter memreservation = new ConfigParameter("memreservation", true, "MR", "Change memory reservation, value is in MB");
 
 		ConfigParameter property = new ConfigParameter("parameter", true, "PARAM", "Virtual Machine parameter to modify");
 		ConfigParameter value = new ConfigParameter("value", true, "VALUE", "Virtual Machine parameter value");
@@ -135,6 +137,8 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		modifymodes.addOption(odd);
 		modifymodes.addOption(floppy);
 		modifymodes.addOption(boot);
+		modifymodes.addOption(cpureservation);
+		modifymodes.addOption(memreservation);
 		modifymodes.setRequired(true);
 
 		ConfigMode root = new ConfigMode();

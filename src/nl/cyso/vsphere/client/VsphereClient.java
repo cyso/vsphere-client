@@ -56,6 +56,7 @@ import com.vmware.vim25.InvalidState;
 import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.OptionValue;
+import com.vmware.vim25.ResourceAllocationInfo;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.TaskInProgress;
 import com.vmware.vim25.VirtualCdrom;
@@ -338,6 +339,21 @@ public class VsphereClient {
 
 				bootopts.setBootOrder(bootorder.toArray(new VirtualMachineBootOptionsBootableDevice[0]));
 				spec.setBootOptions(bootopts);
+			} else if (Configuration.has("cpureservation") || Configuration.has("memreservation")) {
+				if (Configuration.has("cpureservation")) {
+					ResourceAllocationInfo resource = new ResourceAllocationInfo();
+					long res = Long.parseLong(Configuration.getString("cpureservation"));
+					resource.setReservation(res);
+					spec.setCpuAllocation(resource);
+					Formatter.printInfoLine(String.format("Setting CPU reservation to %d Mhz", res));
+				}
+				if (Configuration.has("memreservation")) {
+					ResourceAllocationInfo resource = new ResourceAllocationInfo();
+					long res = Long.parseLong(Configuration.getString("memreservation"));
+					resource.setReservation(Long.parseLong(Configuration.getString("memreservation")));
+					spec.setMemoryAllocation(resource);
+					Formatter.printInfoLine(String.format("Setting Memory reservation to %d MB", res));
+				}
 			} else {
 				throw new RuntimeException("Failure: invalid combination of options for modifying VMs");
 			}
