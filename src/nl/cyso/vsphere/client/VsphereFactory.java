@@ -32,11 +32,13 @@ import com.vmware.vim25.DistributedVirtualPortgroupInfo;
 import com.vmware.vim25.DistributedVirtualSwitchInfo;
 import com.vmware.vim25.DistributedVirtualSwitchPortConnection;
 import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.NetworkSummary;
 import com.vmware.vim25.ParaVirtualSCSIController;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.VirtualCdrom;
 import com.vmware.vim25.VirtualCdromIsoBackingInfo;
 import com.vmware.vim25.VirtualDevice;
+import com.vmware.vim25.VirtualDeviceBackingInfo;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
 import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
@@ -46,6 +48,7 @@ import com.vmware.vim25.VirtualDiskMode;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardDistributedVirtualPortBackingInfo;
 import com.vmware.vim25.VirtualEthernetCardMacType;
+import com.vmware.vim25.VirtualEthernetCardNetworkBackingInfo;
 import com.vmware.vim25.VirtualFloppy;
 import com.vmware.vim25.VirtualFloppyImageBackingInfo;
 import com.vmware.vim25.VirtualIDEController;
@@ -78,14 +81,26 @@ public class VsphereFactory {
 		List<DistributedVirtualPortgroupInfo> portGroups = VsphereQuery.getVirtualPortgroupsForConfigTarget(configTarget, network);
 		List<DistributedVirtualSwitchInfo> switches = VsphereQuery.getVirtualSwitchesForConfigTarget(configTarget, "dvSwitch");
 
-		if (portGroups.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve requested PortGroup");
-			System.exit(-1);
+		VirtualEthernetCardMacType macmode = VirtualEthernetCardMacType.manual;
+		if (mac == null) {
+			macmode = VirtualEthernetCardMacType.generated;
 		}
 
-		if (switches.size() < 1) {
-			Formatter.printErrorLine("Failed to retrieve Switches");
-			System.exit(-1);
+		VirtualDeviceConfigSpec nicSpec = null;
+		if (portGroups.size() >= 1 && switches.size() >= 1) {
+			String networkName = portGroups.get(0).getPortgroupName();
+			String switchUuid = switches.get(0).getSwitchUuid();
+
+			DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
+			nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, macmode, mac, VirtualDeviceConfigSpecOperation.add);
+		} else {
+			List<NetworkSummary> networks = VsphereQuery.getNetworksForConfigTarget(configTarget, network);
+			if (networks.size() < 1) {
+				Formatter.printErrorLine("Could not find network");
+				System.exit(-1);
+			}
+			NetworkSummary nw = networks.get(0);
+			nicSpec = VsphereFactory.getVirtualNicForNetwork(nw, macmode, mac, VirtualDeviceConfigSpecOperation.add);
 		}
 
 		Datastore store = null;
@@ -102,8 +117,6 @@ public class VsphereFactory {
 			store = new Datastore(VsphereManager.getServerConnection(), datastores.get(0).getDatastore());
 		}
 
-		String networkName = portGroups.get(0).getPortgroupName();
-		String switchUuid = switches.get(0).getSwitchUuid();
 		ManagedObjectReference datastoreRef = store.getMOR();
 		String datastoreVolume = VsphereQuery.getVolumeName(store.getName());
 
@@ -125,14 +138,6 @@ public class VsphereFactory {
 		} else {
 			disk1Spec = VsphereFactory.createVirtualDisk(scsiCtrlSpec.getDevice().getKey(), 0, datastoreRef, diskSizeMB);
 		}
-
-		VirtualEthernetCardMacType macmode = VirtualEthernetCardMacType.manual;
-		if (mac == null) {
-			macmode = VirtualEthernetCardMacType.generated;
-		}
-
-		DistributedVirtualSwitchPortConnection port = VsphereFactory.getPortForNetworkAndSwitch(networkName, switchUuid);
-		VirtualDeviceConfigSpec nicSpec = VsphereFactory.getVirtualNicForPortGroup(port, macmode, mac, VirtualDeviceConfigSpecOperation.add);
 
 		VirtualDeviceConfigSpec[] deviceConfigSpec = null;
 		if (disk2Spec != null) {
@@ -307,12 +312,9 @@ public class VsphereFactory {
 		return port;
 	}
 
-	protected static VirtualDeviceConfigSpec getVirtualNicForPortGroup(DistributedVirtualSwitchPortConnection port, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {
-		VirtualEthernetCardDistributedVirtualPortBackingInfo nicBacking = new VirtualEthernetCardDistributedVirtualPortBackingInfo();
-		nicBacking.setPort(port);
-
+	private static VirtualDeviceConfigSpec getVirtualNicForBacking(VirtualDeviceBackingInfo backing, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {
 		VirtualEthernetCard nic = new VirtualVmxnet3();
-		nic.setBacking(nicBacking);
+		nic.setBacking(backing);
 		nic.setKey(VsphereFactory.getKey());
 		nic.setAddressType(mac.toString());
 		if (mac == VirtualEthernetCardMacType.manual) {
@@ -324,5 +326,20 @@ public class VsphereFactory {
 		nicSpec.setDevice(nic);
 
 		return nicSpec;
+	}
+
+	protected static VirtualDeviceConfigSpec getVirtualNicForNetwork(NetworkSummary network, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {
+		VirtualEthernetCardNetworkBackingInfo nicBacking = new VirtualEthernetCardNetworkBackingInfo();
+		nicBacking.setNetwork(network.getNetwork());
+		nicBacking.setDeviceName(network.getName());
+
+		return VsphereFactory.getVirtualNicForBacking(nicBacking, mac, customMac, action);
+	}
+
+	protected static VirtualDeviceConfigSpec getVirtualNicForPortGroup(DistributedVirtualSwitchPortConnection port, VirtualEthernetCardMacType mac, String customMac, VirtualDeviceConfigSpecOperation action) {
+		VirtualEthernetCardDistributedVirtualPortBackingInfo nicBacking = new VirtualEthernetCardDistributedVirtualPortBackingInfo();
+		nicBacking.setPort(port);
+
+		return VsphereFactory.getVirtualNicForBacking(nicBacking, mac, customMac, action);
 	}
 }
