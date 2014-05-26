@@ -607,8 +607,8 @@ public class VsphereClient {
 	}
 
 	protected static void ComputeFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
-		if (!Configuration.has("cluster") && (listType == ListModeType.ESXNODE || listType == ListModeType.NETWORK || listType == ListModeType.STORAGE)) {
-			Formatter.usageError("ESXNode, Network and Storage listing requires --cluster", "LIST", true);
+		if (!Configuration.has("cluster") && listType == ListModeType.ESXNODE) {
+			Formatter.usageError("ESXNode listing requires --cluster", "LIST", true);
 		}
 
 		Map<String, ClusterComputeResource> objects = VsphereQuery.getClustersForDatacenter(Configuration.getString("dc"));
@@ -622,27 +622,55 @@ public class VsphereClient {
 			return;
 		}
 
-		ClusterComputeResource cluster = objects.get(Configuration.getString("cluster"));
-		if (cluster == null) {
-			Formatter.printErrorLine("Could not find cluster");
-			return;
-		}
-
 		ManagedEntity[] childs = new ManagedEntity[0];
-		switch (listType) {
-		case ESXNODE:
-			childs = cluster.getHosts();
-			break;
-		case NETWORK:
-			childs = cluster.getNetworks();
-			break;
-		case STORAGE:
-			childs = cluster.getDatastores();
-			break;
-		default:
-			Formatter.printErrorLine("Invalid list mode selected for ComputeFolderListMode");
-			System.exit(-1);
-			break;
+		if (Configuration.has("cluster")) {
+			ClusterComputeResource cluster = objects.get(Configuration.getString("cluster"));
+			if (cluster == null) {
+				Formatter.printErrorLine("Could not find cluster");
+				return;
+			}
+
+			switch (listType) {
+			case ESXNODE:
+				childs = cluster.getHosts();
+				break;
+			case NETWORK:
+				childs = cluster.getNetworks();
+				break;
+			case STORAGE:
+				childs = cluster.getDatastores();
+				break;
+			default:
+				Formatter.printErrorLine("Invalid list mode selected for ComputeFolderListMode with --cluster");
+				System.exit(-1);
+				break;
+			}
+
+			Formatter.printBorderedInfo(String.format("Objects found in cluster: %s\n", Configuration.getString("cluster")));
+		} else if (Configuration.has("esxnode")) {
+			ManagedObjectReference hostRef = VsphereQuery.getHostNodeReference(Configuration.getString("esxnode"), Configuration.getString("dc"));
+			if (hostRef == null) {
+				Formatter.printErrorLine("Could not find ESX node");
+				return;
+			}
+			HostSystem host = new HostSystem(VsphereManager.getServerConnection(), hostRef);
+
+			switch (listType) {
+			case NETWORK:
+				childs = host.getNetworks();
+				break;
+			case STORAGE:
+				childs = host.getDatastores();
+				break;
+			default:
+				Formatter.printErrorLine("Invalid list mode selected for ComputeFolderListMode with --esxnode");
+				System.exit(-1);
+				break;
+			}
+
+			Formatter.printBorderedInfo(String.format("Objects found in ESX node: %s\n", Configuration.getString("esxnode")));
+		} else {
+			Formatter.usageError("Network and storage listing requires --cluster or --esxnode", "LIST", true);
 		}
 
 		Arrays.sort(childs, new Comparator<ManagedEntity>() {
@@ -651,8 +679,6 @@ public class VsphereClient {
 				return o1.getName().compareTo(o2.getName());
 			}
 		});
-
-		Formatter.printBorderedInfo(String.format("Objects found in cluster: %s\n", Configuration.getString("cluster")));
 
 		for (ManagedEntity child : childs) {
 			Formatter.printInfoLine(child.getName());

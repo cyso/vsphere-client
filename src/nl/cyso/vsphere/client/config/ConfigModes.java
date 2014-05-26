@@ -75,6 +75,11 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		nodeopt.addOption(esxcluster);
 		nodeopt.setRequired(true);
 
+		OptionGroup listopt = new OptionGroup();
+		listopt.addOption(cluster);
+		listopt.addOption(esxnode);
+		listopt.setRequired(false);
+
 		ConfigParameter template = new ConfigParameter("template", true, "TEMPLATE", "Select this template");
 		template.setOptionalArg(true);
 
@@ -160,7 +165,7 @@ public class ConfigModes extends nl.nekoconeko.configmode.ConfigModes {
 		list.addOption(storage);
 		list.addOption(folder);
 		list.addOption(fqdn);
-		list.addOption(cluster);
+		list.addOptionGroup(listopt);
 		list.addOption(detailed);
 		list.addOption(properties);
 		list.addOption(depth);
