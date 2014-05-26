@@ -352,6 +352,10 @@ public class VsphereQuery {
 		return output;
 	}
 
+	protected static Map<String, ManagedObjectReference> getDatacenterReferences() throws RuntimeFault, RemoteException {
+		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "Datacenter");
+	}
+
 	protected static ManagedObjectReference getDatacenterReference(String name) throws RuntimeFault, RemoteException {
 		return VsphereQuery.getMOREFsInContainerByType(VsphereManager.getServiceInstance().getRootFolder().getMOR(), "Datacenter").get(name);
 	}

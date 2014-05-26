@@ -147,11 +147,18 @@ public class Entry {
 					Formatter.usageError("Invalid List type selected", "LIST", true);
 				}
 
+				if (!listType.equals(ListModeType.DC) && !Configuration.has("dc")) {
+					Formatter.usageError("--dc must be specified", "LIST", true);
+				}
+
 				if (listType.equals(ListModeType.STORAGEFOLDER) && !Configuration.has("storage")) {
 					Formatter.usageError("--storage must be specified when using storagefolder list mode", "LIST", true);
 				}
 
 				switch (listType) {
+				case DC:
+					VsphereClient.DCListMode();
+					break;
 				case FOLDER:
 				case VM:
 					VsphereClient.VMFolderListMode(listType);

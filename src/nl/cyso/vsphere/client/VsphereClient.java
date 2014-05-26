@@ -483,6 +483,19 @@ public class VsphereClient {
 		}
 	}
 
+	protected static void DCListMode() throws RuntimeFault, RemoteException {
+		Map<String, ManagedObjectReference> dcs = VsphereQuery.getDatacenterReferences();
+
+		if (dcs.isEmpty()) {
+			Formatter.printInfoLine("No objects found!");
+		} else {
+			Formatter.printBorderedInfo("Objects found\n");
+			for (String dc : dcs.keySet()) {
+				Formatter.printInfoLine("- " + dc);
+			}
+		}
+	}
+
 	protected static void VMFolderListMode(ListModeType listType) throws InvalidProperty, RuntimeFault, RemoteException {
 		Formatter.printInfoLine("Selecting root Virtual Machine folder");
 

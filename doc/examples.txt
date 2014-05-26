@@ -6,6 +6,10 @@ These are the base options that EVERY call must specify. If password is not spec
 
 See the CONFIGURATION section for the proper configuration syntax. All examples after this one will assume that you specified username, password and server in the config file.
 
+[vsphere-client --config config.prop -l dc]
+
+List all Datacenters. Most other modes require a Datacenter to be specified using --dc.
+
 [vsphere-client --config config.prop --dc Datacenter -l folder]
 
 List the VirtualMachine folders in the root of datacenter Datacenter. Specify --depth to traverse deeper, do note that the command will take longer to execute. Folders are returned as Unix like path names.

@@ -19,5 +19,5 @@
 package nl.cyso.vsphere.client.constants;
 
 public enum ListModeType {
-	VM, FOLDER, CLUSTER, ESXNODE, STORAGE, STORAGEFOLDER, NETWORK
+	DC, VM, FOLDER, CLUSTER, ESXNODE, STORAGE, STORAGEFOLDER, NETWORK
 }
