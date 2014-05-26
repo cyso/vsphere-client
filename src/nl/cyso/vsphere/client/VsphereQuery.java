@@ -311,7 +311,11 @@ public class VsphereQuery {
 
 	protected static List<DistributedVirtualPortgroupInfo> getVirtualPortgroupsForConfigTarget(ConfigTarget config, String keyFilter) {
 		List<DistributedVirtualPortgroupInfo> output = new ArrayList<DistributedVirtualPortgroupInfo>();
-		for (DistributedVirtualPortgroupInfo portGroup : config.getDistributedVirtualPortgroup()) {
+		DistributedVirtualPortgroupInfo[] portGroups = config.getDistributedVirtualPortgroup();
+		if (portGroups == null) {
+			return output;
+		}
+		for (DistributedVirtualPortgroupInfo portGroup : portGroups) {
 			String pgName = portGroup.getPortgroupName();
 			if (keyFilter != null && !pgName.contains(keyFilter)) {
 				continue;
@@ -325,7 +329,11 @@ public class VsphereQuery {
 
 	protected static List<DistributedVirtualSwitchInfo> getVirtualSwitchesForConfigTarget(ConfigTarget config, String keyFilter) {
 		List<DistributedVirtualSwitchInfo> output = new ArrayList<DistributedVirtualSwitchInfo>();
-		for (DistributedVirtualSwitchInfo sw : config.getDistributedVirtualSwitch()) {
+		DistributedVirtualSwitchInfo[] switches = config.getDistributedVirtualSwitch();
+		if (switches == null) {
+			return output;
+		}
+		for (DistributedVirtualSwitchInfo sw : switches) {
 			String swName = sw.getSwitchName();
 			if (keyFilter != null && !swName.contains(keyFilter)) {
 				continue;
