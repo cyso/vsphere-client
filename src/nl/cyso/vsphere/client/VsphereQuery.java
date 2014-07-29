@@ -50,6 +50,7 @@ import com.vmware.vim25.RetrieveOptions;
 import com.vmware.vim25.RetrieveResult;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.SelectionSpec;
+import com.vmware.vim25.TaskInfo;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VirtualCdrom;
 import com.vmware.vim25.VirtualCdromIsoBackingInfo;
@@ -721,6 +722,19 @@ public class VsphereQuery {
 			HostSystem i = it.next();
 			if (i.getRuntime().isInMaintenanceMode()) {
 				it.remove();
+			}
+			Task[] tasks = i.getRecentTasks();
+			if (tasks.length > 0) {
+				for (Task task : tasks) {
+					try {
+						TaskInfo info = task.getTaskInfo();
+						if (info.getDescriptionId().equals("HostSystem.enterMaintenanceMode")) {
+							it.remove();
+						}
+					} catch (RemoteException e) {
+						continue;
+					}
+				}
 			}
 		}
 		if (lst.size() == 0) {
