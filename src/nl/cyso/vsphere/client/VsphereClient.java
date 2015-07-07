@@ -48,6 +48,7 @@ import com.vmware.vim25.FileInfo;
 import com.vmware.vim25.FileQueryFlags;
 import com.vmware.vim25.HostDatastoreBrowserSearchResults;
 import com.vmware.vim25.HostDatastoreBrowserSearchSpec;
+import com.vmware.vim25.HostSystemConnectionState;
 import com.vmware.vim25.InsufficientResourcesFault;
 import com.vmware.vim25.InvalidDatastore;
 import com.vmware.vim25.InvalidName;
@@ -681,7 +682,12 @@ public class VsphereClient {
 		});
 
 		for (ManagedEntity child : childs) {
-			Formatter.printInfoLine(child.getName());
+			if (child instanceof HostSystem) {
+				HostSystem h = (HostSystem) child;
+				Formatter.printInfoLine(String.format("%s %s", child.getName(), (!h.getRuntime().getConnectionState().equals(HostSystemConnectionState.connected)) ? "D" : ""));
+			} else {
+				Formatter.printInfoLine(child.getClass().getName());
+			}
 		}
 	}
 
